@@ -257,9 +257,9 @@ export const useGameState = () => {
     const now = Date.now();
     const scoreFireBonus = Math.floor(gameState.score / 1000) * 10; // Every 1000 points = 10ms faster
     const levelFireBonus = (gameState.level - 1) * 5; // Each level = 5ms faster
-    const baseFireRate = isMobile ? 200 : 400; // Much faster base fire rate on mobile
+    const baseFireRate = isMobile ? 300 : 400; // Slower base fire rate on mobile
     const playerFireRate = Math.max(
-      isMobile ? 100 : 200, // Even faster minimum on mobile
+      isMobile ? 200 : 200, // Slower minimum on mobile
       baseFireRate - scoreFireBonus - levelFireBonus
     );
 
@@ -561,9 +561,9 @@ export const useGameState = () => {
       }
 
       const enemyConfig = GAME_CONFIG.ENEMY_TYPES[enemyType];
-      const speedMultiplier = isMobile ? 1.5 : 0.4; // Daha dengeli multiplier
+      const speedMultiplier = isMobile ? 0.8 : 0.4; // Çok daha düşük multiplier
       const levelBonus = Math.min(24, currentState.level - 1);
-      const baseSpeedBonus = isMobile ? 1.5 : 0; // Daha düşük base bonus
+      const baseSpeedBonus = isMobile ? 1.0 : 0; // Daha düşük base bonus
       const finalSpeed = (enemyConfig.speed + baseSpeedBonus) * (1 + levelBonus * speedMultiplier);
       
       const newEnemy: Enemy = {
@@ -842,14 +842,14 @@ export const useGameState = () => {
       console.log("Starting enemy spawn intervals...");
 
       // Mobile-optimized spawn rate: Ultra fast for better gameplay
-      const spawnInterval = isMobile ? 600 : 1800; // 0.6s on mobile (ultra fast), 1.8s on desktop
+      const spawnInterval = isMobile ? 400 : 1800; // 0.4s on mobile (faster), 1.8s on desktop
       enemySpawnRef.current = window.setInterval(() => {
         console.log("Spawn interval triggered");
         spawnEnemy();
       }, spawnInterval);
 
       // Mobile-optimized wave spawn: Ultra fast for better gameplay
-      const waveInterval = isMobile ? 1500 : 5000; // 1.5s on mobile (ultra fast), 5s on desktop
+      const waveInterval = isMobile ? 1000 : 5000; // 1.0s on mobile (faster), 5s on desktop
       waveSpawnRef.current = window.setInterval(() => {
         console.log("Wave spawn interval triggered");
         spawnEnemy();
@@ -887,8 +887,8 @@ export const useGameState = () => {
         if (!prev.isBossFight) {
           const currentLevel = prev.level;
           // Mobile-optimized resume spawn rates - Ultra fast for better gameplay
-          const baseSpawnInterval = isMobile ? 400 : 1500;
-          const baseWaveInterval = isMobile ? 1000 : 6000;
+          const baseSpawnInterval = isMobile ? 300 : 1500;
+          const baseWaveInterval = isMobile ? 800 : 6000;
           const newSpawnInterval = Math.max(
             baseSpawnInterval,
             5000 - (currentLevel - 1) * 200
@@ -1919,8 +1919,8 @@ export const useGameState = () => {
                 setGameState((prev) => {
                   const newLevel = prev.level;
                   // Mobile-optimized post-boss spawn rates - Ultra fast for better gameplay
-                  const baseSpawnInterval = isMobile ? 500 : 3000;
-                  const baseWaveInterval = isMobile ? 1500 : 10000;
+                  const baseSpawnInterval = isMobile ? 300 : 3000;
+                  const baseWaveInterval = isMobile ? 1000 : 10000;
                   const newSpawnInterval = Math.max(
                     baseSpawnInterval,
                     6000 - (newLevel - 1) * 200
@@ -2301,9 +2301,13 @@ export const useGameState = () => {
                 newScore - prevState.scoreAtLevelStart
               );
               
-              // Calculate required score for next level: 400 + (currentLevel-1) * 200
-              // Level 1: 400 points (40 enemies), Level 2: 600 points (60 enemies), etc.
-              const requiredScoreForNextLevel = GAME_CONFIG.LEVEL_UP_THRESHOLD + (prevState.level - 1) * 200;
+              // Calculate required score for next level: Tüm leveller için daha hızlı ilerleme
+              // Level 1-5: 100, 200, 300, 400, 500 points (10, 20, 30, 40, 50 düşman)
+              // Level 6+: 600, 700, 800, 900, 1000... (60, 70, 80, 90, 100 düşman)
+              const isEarlyLevel = prevState.level <= 5;
+              const requiredScoreForNextLevel = isEarlyLevel 
+                ? 100 + (prevState.level - 1) * 100  // İlk 5 level: 100, 200, 300, 400, 500
+                : 600 + (prevState.level - 6) * 100; // Level 6+: 600, 700, 800, 900, 1000...
               
               if (progressSinceLevelStart >= requiredScoreForNextLevel) {
                 // Level up!
@@ -2379,8 +2383,8 @@ export const useGameState = () => {
               clearInterval(waveSpawnRef.current);
 
               // Mobile-optimized level progression spawn rates - Ultra fast for better gameplay
-              const baseSpawnInterval = isMobile ? 400 : 1500; // Ultra fast base on mobile
-              const baseWaveInterval = isMobile ? 1000 : 6000; // Ultra fast base on mobile
+              const baseSpawnInterval = isMobile ? 300 : 1500; // Ultra fast base on mobile
+              const baseWaveInterval = isMobile ? 800 : 6000; // Ultra fast base on mobile
               const newSpawnInterval = Math.max(
                 baseSpawnInterval,
                 5000 - (newLevel - 1) * 200
