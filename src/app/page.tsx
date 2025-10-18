@@ -108,41 +108,66 @@ export default function Home() {
   }, [preloadAssets]);
 
 
-  // Loading screen component
-  const LoadingScreen = () => (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#000',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: '"Orbitron", sans-serif',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {/* Animated background stars */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        {Array.from({ length: 50 }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              backgroundColor: '#fff',
-              borderRadius: '50%',
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 2 + 1}px`,
-              height: `${Math.random() * 2 + 1}px`,
-              animation: `pulse ${Math.random() * 2 + 1}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 2}s`,
-            }}
-          />
-        ))}
-      </div>
+  // Loading screen component with fixed hydration mismatch
+  const LoadingScreen = () => {
+    const [stars, setStars] = useState<Array<{
+      id: number;
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+      duration: number;
+      delay: number;
+    }>>([]);
+
+    // Generate stars only on client-side to prevent hydration mismatch
+    useEffect(() => {
+      const starArray = Array.from({ length: 50 }).map((_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        width: Math.random() * 2 + 1,
+        height: Math.random() * 2 + 1,
+        duration: Math.random() * 2 + 1,
+        delay: Math.random() * 2,
+      }));
+      setStars(starArray);
+    }, []);
+
+    return (
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: '#000',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: '"Orbitron", sans-serif',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Animated background stars - client-side only */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          {stars.map((star) => (
+            <div
+              key={star.id}
+              style={{
+                position: 'absolute',
+                backgroundColor: '#fff',
+                borderRadius: '50%',
+                left: `${star.left}%`,
+                top: `${star.top}%`,
+                width: `${star.width}px`,
+                height: `${star.height}px`,
+                animation: `pulse ${star.duration}s ease-in-out infinite`,
+                animationDelay: `${star.delay}s`,
+              }}
+            />
+          ))}
+        </div>
       
-      {/* Loading content */}
-      <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
+        {/* Loading content */}
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
         {/* Game title */}
         <h1 style={{ 
           fontSize: 'clamp(2.5rem, 8vw, 4rem)', 
@@ -195,7 +220,8 @@ export default function Home() {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   // Enhanced main menu component
   const MainMenu = () => (

@@ -13,7 +13,14 @@ import {
   PowerUpType,
   BossAI,
   BossMovementPattern,
+  PerformanceConfig,
+  PooledExplosion,
 } from "@/types/game";
+import {
+  createExplosionPool,
+  SpatialGrid,
+  PerformanceMonitor,
+} from "@/utils/ObjectPool";
 
 const initialGameState: GameState = {
   score: 0,
@@ -80,6 +87,22 @@ export const useGameState = () => {
   const isMobile = typeof window !== 'undefined' && 
     (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
      window.innerWidth <= 768); // Mobile based on screen size or user agent
+
+  // Performance optimization system
+  const performanceConfig: PerformanceConfig = {
+    enableObjectPooling: false, // Temporarily disabled for explosion stability
+    enableSpatialOptimization: true,
+    maxBullets: isMobile ? 20 : 35,
+    maxEnemies: isMobile ? 8 : 12,
+    maxExplosions: isMobile ? 12 : 20, // Increased for better visual effects
+    targetFPS: isMobile ? 30 : 60,
+  };
+
+  // Performance optimization refs (currently setup for future use)
+  const explosionPoolRef = useRef(createExplosionPool(performanceConfig.maxExplosions));
+
+  // Spatial optimization
+  const performanceMonitorRef = useRef(new PerformanceMonitor());
   
   // Force mobile mode for testing (uncomment to test mobile features on desktop)
   // const isMobile = true;
@@ -100,7 +123,7 @@ export const useGameState = () => {
     }
   }, [isMobile]);
 
-  // Collision detection
+  // Collision detection - restored to original accuracy
   const checkCollision = useCallback(
     (
       obj1: Position & { width: number; height: number },
@@ -109,6 +132,7 @@ export const useGameState = () => {
       // Null check to prevent errors
       if (!obj1 || !obj2) return false;
 
+      // Standard AABB collision detection - accurate and reliable
       return (
         obj1.x < obj2.x + obj2.width &&
         obj1.x + obj1.width > obj2.x &&
@@ -119,27 +143,80 @@ export const useGameState = () => {
     []
   );
 
-  // Create explosion effect
+  // Optimized batch collision detection using spatial partitioning (prepared for future use)
+  // Currently using direct collision detection for simplicity
+  /*
+  const checkCollisions = useCallback((
+    objects1: (Position & { width: number; height: number })[],
+    objects2: (Position & { width: number; height: number })[],
+    onCollision: (obj1: Position & { width: number; height: number }, obj2: Position & { width: number; height: number }, index1: number, index2: number) => void
+  ) => {
+    // Implementation ready for when we need batch collision detection
+  }, [checkCollision, performanceConfig.enableSpatialOptimization]);
+  */
+
+  // Optimized explosion creation using object pool
   const createExplosion = useCallback(
     (x: number, y: number, type: "enemy" | "boss" | "player" = "enemy") => {
-      const size = type === "boss" ? 80 : 60;
-      setGameObjects((prev) => ({
-        ...prev,
-        explosions: [
-          ...prev.explosions,
-          {
-            x: x - size / 2,
-            y: y - size / 2,
-            width: size,
-            height: size,
-            frame: 0,
-            maxFrames: 12,
-            type,
-          },
-        ],
-      }));
+      if (!performanceConfig.enableObjectPooling) {
+        // Fallback to old method
+        const size = type === "boss" ? 80 : 60;
+        setGameObjects((prev) => ({
+          ...prev,
+          explosions: [
+            ...prev.explosions,
+            {
+              x: x - size / 2,
+              y: y - size / 2,
+              width: size,
+              height: size,
+              frame: 0,
+              maxFrames: 12,
+              type,
+            },
+          ],
+        }));
+        return;
+      }
+
+      // Use object pool for better performance
+      const explosion = explosionPoolRef.current.get();
+      if (explosion) {
+        const size = type === "boss" ? 80 : 60;
+        explosion.x = x - size / 2;
+        explosion.y = y - size / 2;
+        explosion.width = size;
+        explosion.height = size;
+        explosion.frame = 0;
+        explosion.maxFrames = 12;
+        explosion.type = type;
+        
+        // Add pooled explosion to game state
+        setGameObjects((prev) => ({
+          ...prev,
+          explosions: [...prev.explosions, explosion as PooledExplosion],
+        }));
+      } else {
+        // Fallback if pool is full - use traditional method
+        const size = type === "boss" ? 80 : 60;
+        setGameObjects((prev) => ({
+          ...prev,
+          explosions: [
+            ...prev.explosions,
+            {
+              x: x - size / 2,
+              y: y - size / 2,
+              width: size,
+              height: size,
+              frame: 0,
+              maxFrames: 12,
+              type,
+            },
+          ],
+        }));
+      }
     },
-    []
+    [performanceConfig.enableObjectPooling]
   );
 
   // Combo system functions
@@ -855,8 +932,8 @@ export const useGameState = () => {
         spawnEnemy();
       }, waveInterval);
 
-      // Mobile-optimized power-up spawn: Ultra frequent for better gameplay
-      const powerUpInterval = isMobile ? 2000 : 5000; // 2s on mobile (ultra frequent), 5s on desktop
+      // Mobile-optimized power-up spawn: Balanced frequency
+      const powerUpInterval = isMobile ? 8000 : 10000; // 8s on mobile (balanced), 10s on desktop
       powerUpSpawnRef.current = window.setInterval(spawnPowerUp, powerUpInterval);
 
       console.log("All spawn intervals started");
@@ -910,8 +987,8 @@ export const useGameState = () => {
           waveSpawnRef.current = window.setInterval(() => {
             for (let i = 0; i < newWaveEnemyCount; i++) spawnEnemy();
           }, newWaveInterval);
-          // Mobile-optimized power-up spawn on resume - Ultra frequent
-          const powerUpInterval = isMobile ? 1500 : 5000;
+          // Mobile-optimized power-up spawn on resume - Balanced frequency
+          const powerUpInterval = isMobile ? 8000 : 10000;
           powerUpSpawnRef.current = window.setInterval(spawnPowerUp, powerUpInterval);
         }
       }
@@ -938,7 +1015,7 @@ export const useGameState = () => {
     }
   }, []);
 
-  // Game loop - Optimized for better performance
+  // Game loop - Optimized for better performance with adaptive quality
   const gameLoop = useCallback(
     (currentTime: number) => {
       if (!gameState.isPlaying || gameState.isPaused) {
@@ -946,10 +1023,29 @@ export const useGameState = () => {
         return;
       }
 
-      // Adaptive FPS limiting for mobile performance - consistent with mobile detection
+      // Performance monitoring
+      const monitor = performanceMonitorRef.current;
+      monitor.updateFrame(currentTime);
+
+      // Adaptive FPS limiting with performance monitoring
       const deltaTime = currentTime - lastTimeRef.current;
-      const targetFPS = isMobile ? 30 : 60; // 30 FPS on mobile for better performance, 60 FPS on desktop
+      const baseFPS = performanceConfig.targetFPS;
+      
+      // Adaptive quality: lower FPS if performance is poor
+      let targetFPS = baseFPS;
+      if (monitor.shouldDropQuality()) {
+        targetFPS = Math.max(15, baseFPS * 0.6); // Drop to 60% of target, minimum 15 FPS
+        console.log(`🔥 Performance drop detected! Reducing target FPS from ${baseFPS} to ${targetFPS}`);
+      }
+
       const frameTime = 1000 / targetFPS;
+      
+      // Frame skipping for performance
+      if (monitor.shouldSkipFrame(targetFPS)) {
+        // Skip this frame to maintain performance
+        gameLoopRef.current = requestAnimationFrame(gameLoop);
+        return;
+      }
       
       if (deltaTime < frameTime) {
         gameLoopRef.current = requestAnimationFrame(gameLoop);
@@ -977,31 +1073,64 @@ export const useGameState = () => {
         const shipCenterX = newState.ship.x + newState.ship.width / 2;
         const shipCenterY = newState.ship.y + newState.ship.height / 2;
 
-        // Update bullets - Optimized with bullet limit for mobile
-        newState.bullets = newState.bullets
-          .map((bullet) => ({ ...bullet, y: bullet.y - bullet.speed }))
-          .filter((bullet) => bullet.y > -bullet.height)
-          .slice(0, isMobile ? 15 : 30); // Limit bullets to 15 on mobile, 30 on desktop
+        // Update bullets - Memory-optimized with in-place updates to avoid GC pressure
+        const bullets = newState.bullets;
+        let bulletWriteIndex = 0;
+        
+        for (let i = 0; i < bullets.length; i++) {
+          const bullet = bullets[i];
+          if (!gameState.isPaused) {
+            bullet.y -= bullet.speed;
+          }
+          
+          // Keep bullet if still on screen
+          if (bullet.y > -bullet.height && bulletWriteIndex < performanceConfig.maxBullets) {
+            if (bulletWriteIndex !== i) {
+              bullets[bulletWriteIndex] = bullet;
+            }
+            bulletWriteIndex++;
+          }
+        }
+        
+        // Truncate array to remove excess bullets
+        bullets.length = bulletWriteIndex;
+        
+        // Update enemy bullets - Memory-optimized
+        const enemyBullets = newState.enemyBullets;
+        const maxEnemyBullets = isMobile ? 2 : 4; // Slightly increased for better gameplay
+        let enemyBulletWriteIndex = 0;
+        
+        for (let i = 0; i < enemyBullets.length; i++) {
+          const bullet = enemyBullets[i];
+          if (!gameState.isPaused) {
+            bullet.y += bullet.speed * timeSlowBulletFactor;
+          }
+          
+          // Keep bullet if still on screen
+          if (bullet.y < GAME_CONFIG.CANVAS_HEIGHT && enemyBulletWriteIndex < maxEnemyBullets) {
+            if (enemyBulletWriteIndex !== i) {
+              enemyBullets[enemyBulletWriteIndex] = bullet;
+            }
+            enemyBulletWriteIndex++;
+          }
+        }
+        
+        // Truncate array to remove excess bullets
+        enemyBullets.length = enemyBulletWriteIndex;
 
-        // Update enemy bullets - Ultra strict bullet limit to prevent spam
-        const maxEnemyBullets = isMobile ? 1 : 2; // Ultra strict limit to prevent spam
-        newState.enemyBullets = newState.enemyBullets
-          .map((bullet) => ({
-            ...bullet,
-            y: bullet.y + bullet.speed * timeSlowBulletFactor,
-          }))
-          .filter((bullet) => bullet.y < GAME_CONFIG.CANVAS_HEIGHT)
-          .slice(0, maxEnemyBullets); // Mobile-optimized bullet limit
-
-        // Update enemies - Optimized with enemy limit
+        // Update enemies - Optimized with enemy limit, only move if not paused
         newState.enemies = newState.enemies
           .map((enemy) => {
-            const updatedEnemy = {
-              ...enemy,
-              y: enemy.y + enemy.speed * timeSlowMovementFactor,
-            };
+            // Update enemy position in-place for better performance
+            if (!gameState.isPaused) {
+              enemy.y += enemy.speed * timeSlowMovementFactor;
+            }
 
-            // Enemy shooting logic - Different patterns for each enemy type
+            // Enemy shooting logic - Only shoot if not paused
+            if (gameState.isPaused) {
+              return enemy;
+            }
+            
             const enemyConfig = GAME_CONFIG.ENEMY_TYPES[enemy.type];
             const now = Date.now();
 
@@ -1064,7 +1193,7 @@ export const useGameState = () => {
               const lastBullet = newState.enemyBullets[newState.enemyBullets.length - 1];
               if (lastBullet && Math.abs(lastBullet.y - enemy.y) < 5) {
                 // If last bullet is too close, don't spawn another
-                return updatedEnemy;
+                return enemy;
               }
             }
             
@@ -1072,7 +1201,7 @@ export const useGameState = () => {
             console.log(`🎯 Enemy ${enemy.type} fired: rate=${effectiveEnemyFireRate}ms, gap=${timeSinceLastShot}ms, bullets on screen: ${currentBulletCount}/${maxBulletsOnScreen}, frame: ${Math.floor(currentFrame)}`);
           }
 
-            return updatedEnemy;
+            return enemy;
           })
           .filter((enemy) => {
             if (enemy.y > GAME_CONFIG.CANVAS_HEIGHT) {
@@ -1090,11 +1219,15 @@ export const useGameState = () => {
           })
           .slice(0, isMobile ? 5 : 8); // Limit enemies to 5 on mobile, 8 on desktop
 
-        // Update power-ups
+        // Update power-ups - Only move if not paused
         newState.powerUps = newState.powerUps
           .map((powerUp) => {
-            const updatedPowerUp = { ...powerUp, y: powerUp.y + powerUp.speed };
-            if (magnetActive) {
+            const updatedPowerUp = { ...powerUp };
+            // Only move power-ups if game is not paused
+            if (!gameState.isPaused) {
+              updatedPowerUp.y = powerUp.y + powerUp.speed;
+            }
+            if (magnetActive && !gameState.isPaused) {
               const powerUpCenterX =
                 updatedPowerUp.x + updatedPowerUp.width / 2;
               const powerUpCenterY =
@@ -1117,10 +1250,30 @@ export const useGameState = () => {
           })
           .filter((powerUp) => powerUp.y < GAME_CONFIG.CANVAS_HEIGHT);
 
-        // Update explosions
-        newState.explosions = newState.explosions
-          .map((explosion) => ({ ...explosion, frame: explosion.frame + 1 }))
-          .filter((explosion) => explosion.frame < explosion.maxFrames);
+        // Update explosions - Memory-optimized with proper pool management
+        const explosions = newState.explosions;
+        let explosionWriteIndex = 0;
+        
+        for (let i = 0; i < explosions.length; i++) {
+          const explosion = explosions[i];
+          explosion.frame++; // In-place frame update
+          
+          // Keep explosion if not finished
+          if (explosion.frame < explosion.maxFrames) {
+            if (explosionWriteIndex !== i) {
+              explosions[explosionWriteIndex] = explosion;
+            }
+            explosionWriteIndex++;
+          } else {
+            // Return finished explosion to pool if it's a pooled object
+            if (performanceConfig.enableObjectPooling && 'isActive' in explosion) {
+              explosionPoolRef.current.release(explosion as PooledExplosion);
+            }
+          }
+        }
+        
+        // Truncate array to remove finished explosions
+        explosions.length = explosionWriteIndex;
 
         // Particles removed for better mobile performance - using explosion images instead
 
@@ -1943,8 +2096,8 @@ export const useGameState = () => {
                   waveSpawnRef.current = window.setInterval(() => {
                     for (let i = 0; i < newWaveEnemyCount; i++) spawnEnemy();
                   }, newWaveInterval);
-                  // Mobile-optimized power-up spawn after boss defeat - Ultra frequent
-                  const powerUpInterval = isMobile ? 1000 : 5000;
+                  // Mobile-optimized power-up spawn after boss defeat - Balanced frequency
+                  const powerUpInterval = isMobile ? 8000 : 10000;
                   powerUpSpawnRef.current = window.setInterval(
                     spawnPowerUp,
                     powerUpInterval
@@ -2440,6 +2593,9 @@ export const useGameState = () => {
       gameState.combo,
       gameState.screenShake,
       isMobile,
+      performanceConfig.maxBullets,
+      performanceConfig.targetFPS,
+      performanceConfig.enableObjectPooling,
       checkCollision,
       createEnhancedExplosion,
       spawnEnemy,

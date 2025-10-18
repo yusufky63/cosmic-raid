@@ -99,6 +99,35 @@ export interface Explosion {
   type: 'enemy' | 'boss' | 'player';
 }
 
+// Performance optimization interfaces
+export interface Poolable {
+  isActive: boolean;
+  reset?(): void;
+}
+
+export interface ObjectPool<T extends Poolable> {
+  pool: T[];
+  activeCount: number;
+  maxSize: number;
+  get(): T | null;
+  release(obj: T): void;
+  clear(): void;
+}
+
+export interface PooledBullet extends Bullet, Poolable {}
+export interface PooledEnemy extends Enemy, Poolable {}
+export interface PooledExplosion extends Explosion, Poolable {}
+export interface PooledPowerUp extends PowerUp, Poolable {}
+
+export interface PerformanceConfig {
+  enableObjectPooling: boolean;
+  enableSpatialOptimization: boolean;
+  maxBullets: number;
+  maxEnemies: number;
+  maxExplosions: number;
+  targetFPS: number;
+}
+
 export interface GameObjects {
   ship: Ship;
   bullets: Bullet[];

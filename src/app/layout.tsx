@@ -38,15 +38,17 @@ export const metadata: Metadata = {
     description: 'Defend the galaxy in this epic space shooter! Built for Farcaster on Base network.',
     images: ['https://cosmic-raid.vercel.app/og-image.png'],
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
   robots: {
     index: true,
     follow: true,
   },
+};
+
+// Viewport should be a separate export in Next.js 14+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

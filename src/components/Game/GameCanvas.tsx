@@ -19,6 +19,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
   const scaleRef = useRef(1);
   const dprRef = useRef(1);
 
+  // Performance optimization refs
+  const lastRenderTimeRef = useRef(0);
+  const frameCountRef = useRef(0);
+  const skipFrameCountRef = useRef(0);
+  
+  // Mobile performance detection
+  const isMobile = typeof window !== 'undefined' && 
+    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+     window.innerWidth <= 768);
+
   // Optimized image loading for mobile performance
   useEffect(() => {
     // Priority-based image loading: Load essential images first
@@ -139,36 +149,66 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
     });
   }, []);
 
-  // Responsive sizing for mobile: fit to container and scale drawing
+  // Optimized responsive sizing for mobile performance
   useEffect(() => {
+    let resizeTimeout: NodeJS.Timeout;
+    
     const handleResize = () => {
-      const el = containerRef.current;
-      const canvas = canvasRef.current;
-      if (!el || !canvas) return;
-      const cw = el.clientWidth;
-      const ch = el.clientHeight;
-      const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
-      const scale = Math.min(cw / GAME_CONFIG.CANVAS_WIDTH, ch / GAME_CONFIG.CANVAS_HEIGHT) || 1;
-      scaleRef.current = scale;
-      dprRef.current = dpr;
-      const renderW = Math.floor(GAME_CONFIG.CANVAS_WIDTH * scale);
-      const renderH = Math.floor(GAME_CONFIG.CANVAS_HEIGHT * scale);
-      canvas.style.width = `${renderW}px`;
-      canvas.style.height = `${renderH}px`;
-      canvas.width = Math.floor(renderW * dpr);
-      canvas.height = Math.floor(renderH * dpr);
+      // Debounce resize calls for performance
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const el = containerRef.current;
+        const canvas = canvasRef.current;
+        if (!el || !canvas) return;
+        
+        const cw = el.clientWidth;
+        const ch = el.clientHeight;
+        
+        // Optimize DPR for mobile performance (limit to 2x max)
+        const rawDPR = window.devicePixelRatio || 1;
+        const dpr = isMobile ? Math.min(2, Math.max(1, Math.floor(rawDPR))) : Math.max(1, Math.floor(rawDPR));
+        
+        const scale = Math.min(cw / GAME_CONFIG.CANVAS_WIDTH, ch / GAME_CONFIG.CANVAS_HEIGHT) || 1;
+        scaleRef.current = scale;
+        dprRef.current = dpr;
+        
+        const renderW = Math.floor(GAME_CONFIG.CANVAS_WIDTH * scale);
+        const renderH = Math.floor(GAME_CONFIG.CANVAS_HEIGHT * scale);
+        
+        // Update canvas size
+        canvas.style.width = `${renderW}px`;
+        canvas.style.height = `${renderH}px`;
+        canvas.width = Math.floor(renderW * dpr);
+        canvas.height = Math.floor(renderH * dpr);
+        
+        // Optimize canvas rendering context for performance
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Disable antialiasing for better performance
+          ctx.imageSmoothingEnabled = false;
+          // Set pixel rendering mode for crisp pixels
+          if (isMobile) {
+            ctx.imageSmoothingQuality = 'low';
+          }
+        }
+      }, isMobile ? 100 : 50); // Longer debounce on mobile
     };
 
     handleResize();
+    
+    // Use ResizeObserver with debouncing
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : undefined;
     const container = containerRef.current;
     if (ro && container) ro.observe(container);
-    window.addEventListener('resize', handleResize);
+    
+    window.addEventListener('resize', handleResize, { passive: true });
+    
     return () => {
+      clearTimeout(resizeTimeout);
       window.removeEventListener('resize', handleResize);
       if (ro && container) ro.unobserve(container);
     };
-  }, []);
+  }, [isMobile]);
 
   // Mobile-optimized starfield background - reduced complexity for better performance
   const drawBackground = useCallback((ctx: CanvasRenderingContext2D) => {
@@ -767,9 +807,34 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear and set transform for responsive scaling
+    const currentTime = performance.now();
+    const deltaTime = currentTime - lastRenderTimeRef.current;
+    frameCountRef.current++;
+
+    // Adaptive frame skipping for mobile performance
+    const targetFrameTime = isMobile ? 33.33 : 16.67; // 30fps mobile, 60fps desktop
+    if (deltaTime < targetFrameTime && frameCountRef.current > 10) {
+      return; // Skip frame to maintain target framerate
+    }
+
+    // Skip every other frame on mobile when performance is poor
+    if (isMobile && deltaTime > targetFrameTime * 2) {
+      if (skipFrameCountRef.current % 2 === 0) {
+        skipFrameCountRef.current++;
+        return;
+      }
+      skipFrameCountRef.current++;
+    }
+
+    lastRenderTimeRef.current = currentTime;
+
+    // Optimized canvas setup
     const scale = scaleRef.current;
     const dpr = dprRef.current;
+    
+    // Enable image smoothing only when needed (disabled for pixel art performance)
+    ctx.imageSmoothingEnabled = false;
+    
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -783,8 +848,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
     
     ctx.setTransform(scale * dpr, 0, 0, scale * dpr, shakeX * dpr, shakeY * dpr);
 
-    // Background
-    drawBackground(ctx);
+    // Background - drawn only when not paused for performance
+    if (!isPaused) {
+      drawBackground(ctx);
+    }
 
     if (!isPlaying) {
       if (!imagesLoaded) {
@@ -796,19 +863,44 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       return;
     }
 
-    // Draw game objects
+    // Batch rendering for performance - reduce context state changes
+    ctx.save();
+    
+    // Draw static objects first (ship)
     drawShip(ctx, gameObjects.ship, gameObjects.level || 1);
-    gameObjects.bullets.forEach(b => drawBullet(ctx, b, gameObjects.level || 1));
-    gameObjects.enemyBullets.forEach(b => drawBullet(ctx, b, gameObjects.level || 1));
-    gameObjects.enemies.forEach(e => drawEnemy(ctx, e));
-    gameObjects.powerUps.forEach(p => drawPowerUp(ctx, p));
-    // Particles removed for better mobile performance
-    gameObjects.explosions.forEach(e => drawExplosion(ctx, e));
+    
+    // Draw bullets in batch to minimize context switches
+    if (gameObjects.bullets.length > 0) {
+      gameObjects.bullets.forEach(b => drawBullet(ctx, b, gameObjects.level || 1));
+    }
+    
+    if (gameObjects.enemyBullets.length > 0) {
+      gameObjects.enemyBullets.forEach(b => drawBullet(ctx, b, gameObjects.level || 1));
+    }
+    
+    // Draw enemies
+    if (gameObjects.enemies.length > 0) {
+      gameObjects.enemies.forEach(e => drawEnemy(ctx, e));
+    }
+    
+    // Draw power-ups
+    if (gameObjects.powerUps.length > 0) {
+      gameObjects.powerUps.forEach(p => drawPowerUp(ctx, p));
+    }
+    
+    // Draw explosions (reasonable limit for mobile performance)
+    const maxExplosions = isMobile ? 8 : 15; // Increased limits for better visual effects
+    const explosionsToRender = gameObjects.explosions.slice(0, maxExplosions);
+    if (explosionsToRender.length > 0) {
+      explosionsToRender.forEach(e => drawExplosion(ctx, e));
+    }
     
     // Draw boss if present and alive
     if (gameObjects.boss && gameObjects.boss.health > 0) {
       drawBoss(ctx, gameObjects.boss);
     }
+    
+    ctx.restore();
 
     // Pause overlay
     if (isPaused) {
@@ -852,7 +944,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       ctx.font = '20px Arial';
       ctx.fillText('Press R to restart', GAME_CONFIG.CANVAS_WIDTH / 2, GAME_CONFIG.CANVAS_HEIGHT / 2 + 120);
     }
-  }, [gameObjects, gameState, isPlaying, isPaused, imagesLoaded, drawBackground, drawShip, drawBullet, drawEnemy, drawPowerUp, drawExplosion, drawBoss]);
+  }, [gameObjects, gameState, isPlaying, isPaused, imagesLoaded, drawBackground, drawShip, drawBullet, drawEnemy, drawPowerUp, drawExplosion, drawBoss, isMobile]);
 
   // Animation loop
   useEffect(() => {
