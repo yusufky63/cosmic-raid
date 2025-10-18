@@ -567,7 +567,7 @@ export const useGameState = () => {
         y: -GAME_CONFIG.ENEMY_SIZE - 200, // Düşmanları daha uzaktan başlatıyorum (-200 ekstra)
         width: GAME_CONFIG.SHIP_WIDTH,
         height: GAME_CONFIG.SHIP_HEIGHT,
-        speed: enemyConfig.speed + Math.min(24, currentState.level - 1) * (isMobile ? 0.8 : 0.2), // Ultra fast enemies on mobile
+        speed: enemyConfig.speed + Math.min(24, currentState.level - 1) * (isMobile ? 1.6 : 0.2), // 2x faster enemies on mobile
         type: enemyType,
         health: enemyConfig.health,
         lastShot: Date.now(),
