@@ -17,6 +17,7 @@ export interface Bullet extends Position {
   speed: number;
   direction: Direction;
   damage?: number;
+  type?: "normal" | "laser"; // Engine-trail efekti için tip eklendi
 }
 
 export type EnemyType = 'basic' | 'shooter' | 'kamikaze' | 'bomber' | 'stealth' | 'assassin';

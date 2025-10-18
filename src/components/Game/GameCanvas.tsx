@@ -364,74 +364,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
     const radius = Math.min(bullet.width, bullet.height) / 2;
     
     if (bullet.direction === 'up') {
-      // Player bullets - special handling for laser beam and heavy shots
+      // Player bullets - simple handling for laser beam
       ctx.save();
       const heavyPlayerShot = (bullet.damage ?? 1) > 1;
-      const isLaserBeam = (bullet.damage ?? 1) >= 5 && bullet.width >= 30; // Laser beam detection
+      const isLaserBeam = bullet.type === "laser"; // Basitleştirildi: tip kontrolü
       
       if (isLaserBeam) {
-        // LASER BEAM - Epic wide beam effect with engine trail
-        const beamWidth = bullet.width;
-        const beamHeight = bullet.height;
-        
-        // Enhanced trail effect using engine-trail image
+        // LASER BEAM - Basit engine-trail efekti
         const trail = images.engineTrail;
         if (trail) {
-          ctx.save();
-          // Draw multiple trail instances for epic laser effect - reduced for mobile
-          for (let i = 1; i <= 3; i++) { // Reduced trail instances for mobile
-            const trailOffset = i * 15;
-            const trailAlpha = 0.6 / i; // Fading trail
-            const trailWidth = beamWidth + (i * 4); // Expanding trail
-            const trailHeight = beamHeight * 0.8;
-            
-            ctx.globalAlpha = trailAlpha;
-            ctx.filter = `hue-rotate(${i * 30}deg) saturate(150%)`; // Rainbow effect
-            ctx.drawImage(trail, 
-              bullet.x - (i * 2), 
-              bullet.y + trailOffset, 
-              trailWidth, 
-              trailHeight
-            );
-          }
-          ctx.filter = 'none';
-          ctx.restore();
+          // Sadece engine-trail.png göster - efekt yok
+          ctx.drawImage(trail, bullet.x, bullet.y, bullet.width, bullet.height);
+        } else {
+          // Fallback: Simple blue rectangle
+          ctx.fillStyle = '#00BFFF';
+          ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
         }
-        
-        // Outer glow - wide red/orange aura - reduced for mobile
-        ctx.shadowColor = '#FF4500';
-        ctx.shadowBlur = 12; // Reduced shadow blur for mobile performance
-        const outerGrad = ctx.createLinearGradient(centerX, bullet.y + beamHeight, centerX, bullet.y);
-        outerGrad.addColorStop(0, 'rgba(255, 69, 0, 0.1)');   // Fade tail
-        outerGrad.addColorStop(0.3, 'rgba(255, 69, 0, 0.4)');  // Orange glow
-        outerGrad.addColorStop(0.7, 'rgba(255, 20, 147, 0.8)'); // Hot pink
-        outerGrad.addColorStop(1, '#FFFFFF');                   // White core tip
-        ctx.fillStyle = outerGrad;
-        ctx.fillRect(bullet.x - 4, bullet.y, beamWidth + 8, beamHeight);
-        
-        // Main beam - bright core - reduced for mobile
-        ctx.shadowBlur = 8; // Reduced shadow blur for mobile performance
-        ctx.shadowColor = '#FF1493';
-        const mainGrad = ctx.createLinearGradient(centerX, bullet.y + beamHeight, centerX, bullet.y);
-        mainGrad.addColorStop(0, 'rgba(255, 20, 147, 0.3)');   // Pink fade
-        mainGrad.addColorStop(0.4, '#FF1493');                 // Deep pink
-        mainGrad.addColorStop(0.8, '#FF69B4');                 // Hot pink
-        mainGrad.addColorStop(1, '#FFFFFF');                   // White hot tip
-        ctx.fillStyle = mainGrad;
-        ctx.fillRect(bullet.x, bullet.y, beamWidth, beamHeight);
-        
-        // Inner white core - blazing center - reduced for mobile
-        const coreWidth = beamWidth * 0.3;
-        const coreX = centerX - coreWidth / 2;
-        ctx.shadowBlur = 4; // Reduced shadow blur for mobile performance
-        ctx.shadowColor = '#FFFFFF';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(coreX, bullet.y, coreWidth, beamHeight);
-        
-        // Tip flare effect
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        ctx.fillRect(coreX, bullet.y, coreWidth, beamHeight * 0.2);
         
       } else if (heavyPlayerShot) {
         // Heavy shots - cyan beam

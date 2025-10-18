@@ -18,7 +18,6 @@ import {
 } from "@/types/game";
 import {
   createExplosionPool,
-  SpatialGrid,
   PerformanceMonitor,
 } from "@/utils/ObjectPool";
 
@@ -515,13 +514,14 @@ export const useGameState = () => {
       if (hasLaserBeam) {
         consumeLaserBeam = true;
         newBullets.push({
-          x: prev.ship.x + Math.floor(prev.ship.width / 2) - 18,
-          y: prev.ship.y - 80,
-          width: 36,
-          height: 80,
-          speed: bulletSpeed * 2.2,
+          x: prev.ship.x + Math.floor(prev.ship.width / 2) - 8,
+          y: prev.ship.y - 20,
+          width: 16,
+          height: 40,
+          speed: bulletSpeed * 0.8, // Yavaşlatıldı: 2.2x -> 0.8x (normal mermiden yavaş)
           direction: "up" as const,
-          damage: 5,
+          damage: 3, // Damage azaltıldı: 5 -> 3
+          type: "laser", // Engine-trail efekti için tip eklendi
         });
       }
 
@@ -641,7 +641,11 @@ export const useGameState = () => {
       const speedMultiplier = isMobile ? 0.8 : 0.4; // Çok daha düşük multiplier
       const levelBonus = Math.min(24, currentState.level - 1);
       const baseSpeedBonus = isMobile ? 1.0 : 0; // Daha düşük base bonus
-      const finalSpeed = (enemyConfig.speed + baseSpeedBonus) * (1 + levelBonus * speedMultiplier);
+      const calculatedSpeed = (enemyConfig.speed + baseSpeedBonus) * (1 + levelBonus * speedMultiplier);
+      
+      // Maksimum hız sınırlaması - oyunabilirliği korumak için
+      const maxSpeed = isMobile ? 5 : 4; // Mobil: 8, Desktop: 6 maksimum hız
+      const finalSpeed = Math.min(calculatedSpeed, maxSpeed);
       
       const newEnemy: Enemy = {
         x: Math.max(
@@ -664,6 +668,8 @@ export const useGameState = () => {
         - Base Speed Bonus: ${baseSpeedBonus}
         - Level Bonus: ${levelBonus}
         - Speed Multiplier: ${speedMultiplier}
+        - Calculated Speed: ${calculatedSpeed.toFixed(2)}
+        - Max Speed Limit: ${maxSpeed}
         - Final Speed: ${finalSpeed}
         - Enemy Type: ${enemyType}`);
 
@@ -802,8 +808,8 @@ export const useGameState = () => {
       Math.floor(bossConfig.specialAttackRate / (1 + levelDelta * 0.03))
     );
     const scaledSpeed = Math.min(
-      bossConfig.speed + levelDelta * 0.05,
-      bossConfig.speed + 1.4
+      bossConfig.speed + levelDelta * 0.03, // Daha yavaş artış: 0.05 -> 0.03
+      bossConfig.speed + 1.0 // Daha düşük maksimum artış: 1.4 -> 1.0
     );
 
     const spawnTime = Date.now();
@@ -2454,13 +2460,13 @@ export const useGameState = () => {
                 newScore - prevState.scoreAtLevelStart
               );
               
-              // Calculate required score for next level: Tüm leveller için daha hızlı ilerleme
-              // Level 1-5: 100, 200, 300, 400, 500 points (10, 20, 30, 40, 50 düşman)
-              // Level 6+: 600, 700, 800, 900, 1000... (60, 70, 80, 90, 100 düşman)
+              // Calculate required score for next level: Yarıya düşürüldü - daha kolay ilerleme
+              // Level 1-5: 50, 100, 150, 200, 250 points (5, 10, 15, 20, 25 düşman)
+              // Level 6+: 300, 350, 400, 450, 500... (30, 35, 40, 45, 50 düşman)
               const isEarlyLevel = prevState.level <= 5;
               const requiredScoreForNextLevel = isEarlyLevel 
-                ? 100 + (prevState.level - 1) * 100  // İlk 5 level: 100, 200, 300, 400, 500
-                : 600 + (prevState.level - 6) * 100; // Level 6+: 600, 700, 800, 900, 1000...
+                ? 50 + (prevState.level - 1) * 50  // İlk 5 level: 50, 100, 150, 200, 250 (yarıya düştü)
+                : 300 + (prevState.level - 6) * 50; // Level 6+: 300, 350, 400, 450, 500... (yarıya düştü)
               
               if (progressSinceLevelStart >= requiredScoreForNextLevel) {
                 // Level up!
