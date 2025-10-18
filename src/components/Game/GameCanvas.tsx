@@ -184,9 +184,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
     
     ctx.save();
     
-    // Reduced star count for mobile performance (was 80, now 40)
+    // Reduced star count for mobile performance (was 80, now 20)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 20; i++) {
       const x = (i * 127.3 + time * 4) % GAME_CONFIG.CANVAS_WIDTH;
       const y = (i * 83.7 + time * 2) % GAME_CONFIG.CANVAS_HEIGHT;
       const size = i % 4 === 0 ? 2 : 1; // Deterministic size for performance
@@ -196,9 +196,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       ctx.fillRect(x, y, size, size);
     }
     
-    // Fewer bright stars for mobile (was 20, now 10)
+    // Fewer bright stars for mobile (was 20, now 5)
     ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 5; i++) {
       const x = (i * 213.1 + time * 3) % GAME_CONFIG.CANVAS_WIDTH;
       const y = (i * 157.9 + time * 1.5) % GAME_CONFIG.CANVAS_HEIGHT;
       const size = 1.5;
@@ -208,9 +208,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       ctx.fillRect(x, y, size, size);
     }
     
-    // Minimal accent stars for mobile performance (was 5, now 3)
+    // Minimal accent stars for mobile performance (was 5, now 1)
     ctx.fillStyle = 'rgba(100, 150, 255, 0.6)';
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 1; i++) {
       const x = (i * 341.7 + time * 6) % GAME_CONFIG.CANVAS_WIDTH;
       const y = (i * 197.3 + time * 4) % GAME_CONFIG.CANVAS_HEIGHT;
       const size = 1;
@@ -248,16 +248,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       ctx.save();
       ctx.globalAlpha = gameState.isFlashing ? 0.4 : 0.6;
       if (trail) {
-        // Draw a few faded trail instances behind the ship
-        for (let i = 1; i <= 3; i++) {
+        // Draw a few faded trail instances behind the ship - reduced for mobile
+        for (let i = 1; i <= 2; i++) { // Reduced trail instances for mobile
           const offset = i * 10;
           ctx.globalAlpha = ((gameState.isFlashing ? 0.18 : 0.25) / i);
           ctx.drawImage(trail, ship.x, ship.y + offset, actualWidth, Math.max(8, actualHeight * 0.5));
         }
       } else {
-        // Fallback glow
+        // Fallback glow - reduced for mobile
         ctx.shadowColor = '#00FFFF';
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 5; // Reduced shadow blur for mobile performance
         ctx.fillStyle = 'rgba(0,255,255,0.2)';
         ctx.fillRect(ship.x + 4, ship.y + actualHeight, actualWidth - 8, 12);
       }
@@ -270,13 +270,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       ctx.save();
       if (level >= 20) {
         ctx.shadowColor = '#FFD700';
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 8; // Reduced shadow blur for mobile
       } else if (level >= 15) {
         ctx.shadowColor = '#FF4500';
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 6; // Reduced shadow blur for mobile
       } else if (level >= 10) {
         ctx.shadowColor = '#00BFFF';
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 4; // Reduced shadow blur for mobile
       }
       ctx.drawImage(sprite, ship.x, ship.y, actualWidth, actualHeight);
       ctx.restore();
@@ -338,8 +338,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
         const trail = images.engineTrail;
         if (trail) {
           ctx.save();
-          // Draw multiple trail instances for epic laser effect
-          for (let i = 1; i <= 5; i++) {
+          // Draw multiple trail instances for epic laser effect - reduced for mobile
+          for (let i = 1; i <= 3; i++) { // Reduced trail instances for mobile
             const trailOffset = i * 15;
             const trailAlpha = 0.6 / i; // Fading trail
             const trailWidth = beamWidth + (i * 4); // Expanding trail
@@ -358,9 +358,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
           ctx.restore();
         }
         
-        // Outer glow - wide red/orange aura
+        // Outer glow - wide red/orange aura - reduced for mobile
         ctx.shadowColor = '#FF4500';
-        ctx.shadowBlur = 25;
+        ctx.shadowBlur = 12; // Reduced shadow blur for mobile performance
         const outerGrad = ctx.createLinearGradient(centerX, bullet.y + beamHeight, centerX, bullet.y);
         outerGrad.addColorStop(0, 'rgba(255, 69, 0, 0.1)');   // Fade tail
         outerGrad.addColorStop(0.3, 'rgba(255, 69, 0, 0.4)');  // Orange glow
@@ -369,8 +369,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
         ctx.fillStyle = outerGrad;
         ctx.fillRect(bullet.x - 4, bullet.y, beamWidth + 8, beamHeight);
         
-        // Main beam - bright core
-        ctx.shadowBlur = 15;
+        // Main beam - bright core - reduced for mobile
+        ctx.shadowBlur = 8; // Reduced shadow blur for mobile performance
         ctx.shadowColor = '#FF1493';
         const mainGrad = ctx.createLinearGradient(centerX, bullet.y + beamHeight, centerX, bullet.y);
         mainGrad.addColorStop(0, 'rgba(255, 20, 147, 0.3)');   // Pink fade
@@ -380,10 +380,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
         ctx.fillStyle = mainGrad;
         ctx.fillRect(bullet.x, bullet.y, beamWidth, beamHeight);
         
-        // Inner white core - blazing center
+        // Inner white core - blazing center - reduced for mobile
         const coreWidth = beamWidth * 0.3;
         const coreX = centerX - coreWidth / 2;
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 4; // Reduced shadow blur for mobile performance
         ctx.shadowColor = '#FFFFFF';
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(coreX, bullet.y, coreWidth, beamHeight);
@@ -400,7 +400,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
         gradient.addColorStop(0.35, 'rgba(0,255,255,0.5)');
         gradient.addColorStop(1, '#E0FFFF');
         ctx.shadowColor = '#00FFFF';
-        ctx.shadowBlur = 18;
+        ctx.shadowBlur = 9; // Reduced shadow blur for mobile performance
         ctx.fillStyle = gradient;
         ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
       } else {
@@ -485,9 +485,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
           }
         }
         
-        // Outer glow effect
+        // Outer glow effect - reduced for mobile performance
         ctx.shadowColor = glowColor;
-        ctx.shadowBlur = isMultiShot ? 16 : 12;
+        ctx.shadowBlur = isMultiShot ? 8 : 6; // Reduced shadow blur for mobile
         
         // Main bullet body - gradient with tier colors
         const gradient = ctx.createLinearGradient(bulletX, bulletY + bulletHeight, bulletX, bulletY);
@@ -499,10 +499,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
         ctx.fillStyle = gradient;
         ctx.fillRect(bulletX, bulletY, bulletWidth, bulletHeight);
         
-        // Inner bright core
+        // Inner bright core - simplified for mobile
         const coreWidth = bulletWidth * 0.4;
         const coreX = centerX - coreWidth / 2;
-        ctx.shadowBlur = isMultiShot ? 8 : 6;
+        ctx.shadowBlur = isMultiShot ? 4 : 3; // Reduced shadow blur
         ctx.shadowColor = '#FFFFFF';
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(coreX, bulletY, coreWidth, bulletHeight * 0.8);
@@ -525,7 +525,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       const heavyHit = (bullet.damage ?? 1) > 1;
       if (heavyHit) {
         ctx.shadowColor = '#FF00A8';
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 5; // Reduced shadow blur for mobile
         ctx.fillStyle = '#FF00A8';
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius * 1.1, 0, Math.PI * 2);
@@ -537,7 +537,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
         ctx.fill();
       } else {
         ctx.shadowColor = '#FF4444';
-        ctx.shadowBlur = 6;
+        ctx.shadowBlur = 3; // Reduced shadow blur for mobile
         ctx.fillStyle = '#FF4444';
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -551,7 +551,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       }
       ctx.restore();
     }
-  }, []);
+  }, [images.engineTrail]);
 
   const drawEnemy = useCallback((ctx: CanvasRenderingContext2D, enemy: GameObjects['enemies'][0]) => {
     let key: keyof typeof images = 'enemyBasic';
@@ -629,10 +629,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       console.log(`🔫 LaserBeam power-up: Image loaded = ${!!sprite}, Key = ${key}, ImagesLoaded = ${imagesLoaded}`);
     }
     if (sprite) {
-      // Add glow effect for power-ups
+      // Add glow effect for power-ups - reduced for mobile
       ctx.save();
       ctx.shadowColor = '#00FFFF';
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 5; // Reduced shadow blur for mobile performance
       ctx.drawImage(sprite, powerUp.x, powerUp.y, powerUp.width, powerUp.height);
       ctx.restore();
     } else {
@@ -654,21 +654,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
     }
   }, [images, imagesLoaded]);
 
-  const drawParticle = useCallback((ctx: CanvasRenderingContext2D, particle: GameObjects['particles'][0]) => {
-    const alpha = particle.life / particle.maxLife;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = particle.color;
-    ctx.shadowColor = particle.color;
-    ctx.shadowBlur = particle.size * 2;
-    
-    // Regular particles
-    ctx.beginPath();
-    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.restore();
-  }, []);
+  // Particle system removed for better mobile performance - using explosion images instead
 
   const drawExplosion = useCallback((ctx: CanvasRenderingContext2D, explosion: GameObjects['explosions'][0]) => {
     const image = images.explosion;
@@ -688,17 +674,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       const frameWidth = image.width / frameCount;
       const sourceX = currentFrame * frameWidth;
       
-      // Add multiple glow layers for better effect
+      // Add multiple glow layers for better effect - reduced for mobile
       ctx.shadowColor = explosion.type === 'boss' ? '#FF4500' : '#FFD700';
-      ctx.shadowBlur = 20;
+      ctx.shadowBlur = 10; // Reduced shadow blur for mobile performance
       ctx.drawImage(
         image,
         sourceX, 0, frameWidth, image.height,
         explosion.x, explosion.y, explosion.width, explosion.height
       );
       
-      // Add extra glow layer
-      ctx.shadowBlur = 30;
+      // Add extra glow layer - reduced for mobile
+      ctx.shadowBlur = 15; // Reduced shadow blur for mobile performance
       ctx.globalAlpha = alpha * 0.5;
       ctx.drawImage(
         image,
@@ -710,32 +696,32 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       const centerX = explosion.x + explosion.width/2;
       const centerY = explosion.y + explosion.height/2;
       
-      // Outer explosion ring
+      // Outer explosion ring - reduced for mobile
       ctx.shadowColor = explosion.type === 'boss' ? '#FF4500' : '#FFD700';
-      ctx.shadowBlur = 25;
+      ctx.shadowBlur = 12; // Reduced shadow blur for mobile performance
       ctx.fillStyle = explosion.type === 'boss' ? '#FF4500' : '#FFD700';
       ctx.beginPath();
       ctx.arc(centerX, centerY, size/2, 0, Math.PI * 2);
       ctx.fill();
       
-      // Middle explosion ring
-      ctx.shadowBlur = 15;
+      // Middle explosion ring - reduced for mobile
+      ctx.shadowBlur = 8; // Reduced shadow blur for mobile performance
       ctx.fillStyle = explosion.type === 'boss' ? '#FF6600' : '#FFA500';
       ctx.beginPath();
       ctx.arc(centerX, centerY, size/3, 0, Math.PI * 2);
       ctx.fill();
       
-      // Inner explosion core
-      ctx.shadowBlur = 10;
+      // Inner explosion core - reduced for mobile
+      ctx.shadowBlur = 5; // Reduced shadow blur for mobile performance
       ctx.fillStyle = explosion.type === 'boss' ? '#FF0000' : '#FFFFFF';
       ctx.beginPath();
       ctx.arc(centerX, centerY, size/6, 0, Math.PI * 2);
       ctx.fill();
       
-      // Add sparkle effects
-      ctx.shadowBlur = 5;
+      // Add sparkle effects - reduced for mobile
+      ctx.shadowBlur = 3; // Reduced shadow blur for mobile performance
       ctx.fillStyle = '#FFFFFF';
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 4; i++) { // Reduced sparkle count for mobile
         const angle = (i * Math.PI) / 4;
         const sparkleX = centerX + Math.cos(angle) * (size/2 + progress * 20);
         const sparkleY = centerY + Math.sin(angle) * (size/2 + progress * 20);
@@ -758,9 +744,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       // Draw boss with special effects
       ctx.save();
       
-      // Boss glow effect
+      // Boss glow effect - reduced for mobile
       ctx.shadowColor = '#ff0000';
-      ctx.shadowBlur = 20;
+      ctx.shadowBlur = 10; // Reduced shadow blur for mobile performance
       
       // Draw boss image
       ctx.drawImage(image, boss.x, boss.y, boss.width, boss.height);
@@ -816,7 +802,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
     gameObjects.enemyBullets.forEach(b => drawBullet(ctx, b, gameObjects.level || 1));
     gameObjects.enemies.forEach(e => drawEnemy(ctx, e));
     gameObjects.powerUps.forEach(p => drawPowerUp(ctx, p));
-    gameObjects.particles.forEach(p => drawParticle(ctx, p));
+    // Particles removed for better mobile performance
     gameObjects.explosions.forEach(e => drawExplosion(ctx, e));
     
     // Draw boss if present and alive
@@ -866,7 +852,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       ctx.font = '20px Arial';
       ctx.fillText('Press R to restart', GAME_CONFIG.CANVAS_WIDTH / 2, GAME_CONFIG.CANVAS_HEIGHT / 2 + 120);
     }
-  }, [gameObjects, gameState, isPlaying, isPaused, imagesLoaded, drawBackground, drawShip, drawBullet, drawEnemy, drawPowerUp, drawParticle, drawExplosion, drawBoss]);
+  }, [gameObjects, gameState, isPlaying, isPaused, imagesLoaded, drawBackground, drawShip, drawBullet, drawEnemy, drawPowerUp, drawExplosion, drawBoss]);
 
   // Animation loop
   useEffect(() => {

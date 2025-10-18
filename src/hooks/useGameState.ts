@@ -12,7 +12,6 @@ import {
   BossPhase,
   PowerUpType,
   BossAI,
-  Particle,
   BossMovementPattern,
 } from "@/types/game";
 
@@ -181,66 +180,14 @@ export const useGameState = () => {
     []
   );
 
-  // Particle system functions
-  const createParticles = useCallback(
-    (
-      x: number,
-      y: number,
-      count: number,
-      type: Particle["type"] = "spark",
-      colors?: string[]
-    ) => {
-      const particles: Particle[] = [];
-      const defaultColors = {
-        spark: ["#FFD700", "#FFA500", "#FF4500"],
-        smoke: ["#666666", "#999999", "#CCCCCC"],
-        fire: ["#FF0000", "#FF4500", "#FFD700"],
-        magic: ["#9932CC", "#4169E1", "#00BFFF"],
-      };
 
-      const particleColors = colors || defaultColors[type];
-
-      for (let i = 0; i < count; i++) {
-        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
-        const speed = 2 + Math.random() * 4;
-        const life = 30 + Math.random() * 30;
-
-        particles.push({
-          x: x + (Math.random() - 0.5) * 20,
-          y: y + (Math.random() - 0.5) * 20,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          size: 2 + Math.random() * 3,
-          life: life,
-          maxLife: life,
-          color:
-            particleColors[Math.floor(Math.random() * particleColors.length)],
-          type: type,
-        });
-      }
-
-      setGameObjects((prev) => ({
-        ...prev,
-        particles: [...prev.particles, ...particles],
-      }));
-    },
-    []
-  );
-
-  // Enhanced explosion with particles
+  // Enhanced explosion (simplified - no particles needed)
   const createEnhancedExplosion = useCallback(
     (x: number, y: number, type: "enemy" | "boss" | "player" = "enemy") => {
-      // Original explosion
+      // Just create the explosion - particles removed for better mobile performance
       createExplosion(x, y, type);
-
-      // Add particles based on explosion type
-      const particleCount = type === "boss" ? 15 : type === "player" ? 8 : 10;
-      const particleType =
-        type === "boss" ? "fire" : type === "player" ? "smoke" : "spark";
-
-      createParticles(x, y, particleCount, particleType);
     },
-    [createExplosion, createParticles]
+    [createExplosion]
   );
 
   // Move ship - daha hÄ±zlÄ± hareket
@@ -875,24 +822,27 @@ export const useGameState = () => {
     setTimeout(() => {
       console.log("Starting enemy spawn intervals...");
 
-      // Daha hızlı başlangıç: Her 1.8 saniyede 1 düşman spawn et
+      // Mobile-optimized spawn rate: Slower for better performance
+      const spawnInterval = isMobile ? 2500 : 1800; // 2.5s on mobile, 1.8s on desktop
       enemySpawnRef.current = window.setInterval(() => {
         console.log("Spawn interval triggered");
         spawnEnemy();
-      }, 1800);
+      }, spawnInterval);
 
-      // Daha hızlı dalga: Her 5 saniyede 1 düşman (wave)
+      // Mobile-optimized wave spawn: Slower for better performance
+      const waveInterval = isMobile ? 7000 : 5000; // 7s on mobile, 5s on desktop
       waveSpawnRef.current = window.setInterval(() => {
         console.log("Wave spawn interval triggered");
         spawnEnemy();
-      }, 5000);
+      }, waveInterval);
 
-      // Power-up spawn (çok daha sık)
-      powerUpSpawnRef.current = window.setInterval(spawnPowerUp, 5000); // Much more frequent power-ups
+      // Mobile-optimized power-up spawn: Less frequent for better performance
+      const powerUpInterval = isMobile ? 8000 : 5000; // 8s on mobile, 5s on desktop
+      powerUpSpawnRef.current = window.setInterval(spawnPowerUp, powerUpInterval);
 
       console.log("All spawn intervals started");
     }, 100); // 100ms gecikme
-  }, [spawnEnemy, spawnPowerUp]);
+  }, [spawnEnemy, spawnPowerUp, isMobile]);
 
   // Pause/Resume game
   const togglePause = useCallback(() => {
@@ -917,16 +867,20 @@ export const useGameState = () => {
         // Resume - restart spawning if not in boss fight
         if (!prev.isBossFight) {
           const currentLevel = prev.level;
+          // Mobile-optimized resume spawn rates
+          const baseSpawnInterval = isMobile ? 2000 : 1500;
+          const baseWaveInterval = isMobile ? 8000 : 6000;
           const newSpawnInterval = Math.max(
-            1500,
+            baseSpawnInterval,
             5000 - (currentLevel - 1) * 200
           );
           const newWaveInterval = Math.max(
-            6000,
+            baseWaveInterval,
             12000 - (currentLevel - 1) * 500
           );
+          const maxWaveEnemies = isMobile ? 3 : 4;
           const newWaveEnemyCount = Math.min(
-            4,
+            maxWaveEnemies,
             2 + Math.floor((currentLevel - 1) / 3)
           );
 
@@ -937,13 +891,15 @@ export const useGameState = () => {
           waveSpawnRef.current = window.setInterval(() => {
             for (let i = 0; i < newWaveEnemyCount; i++) spawnEnemy();
           }, newWaveInterval);
-          powerUpSpawnRef.current = window.setInterval(spawnPowerUp, 5000); // Much more frequent power-ups
+          // Mobile-optimized power-up spawn on resume
+          const powerUpInterval = isMobile ? 8000 : 5000;
+          powerUpSpawnRef.current = window.setInterval(spawnPowerUp, powerUpInterval);
         }
       }
 
       return { ...prev, isPaused: newPausedState };
     });
-  }, [spawnEnemy, spawnPowerUp]);
+  }, [spawnEnemy, spawnPowerUp, isMobile]);
 
   // End game
   const endGame = useCallback(() => {
@@ -973,7 +929,7 @@ export const useGameState = () => {
 
       // Adaptive FPS limiting for mobile performance - consistent with mobile detection
       const deltaTime = currentTime - lastTimeRef.current;
-      const targetFPS = isMobile ? 50 : 60; // 50 FPS on mobile (improved from 45), 60 FPS on desktop
+      const targetFPS = isMobile ? 30 : 60; // 30 FPS on mobile for better performance, 60 FPS on desktop
       const frameTime = 1000 / targetFPS;
       
       if (deltaTime < frameTime) {
@@ -999,22 +955,21 @@ export const useGameState = () => {
         const shipCenterX = newState.ship.x + newState.ship.width / 2;
         const shipCenterY = newState.ship.y + newState.ship.height / 2;
 
-        // Update bullets - Optimized with bullet limit
+        // Update bullets - Optimized with bullet limit for mobile
         newState.bullets = newState.bullets
           .map((bullet) => ({ ...bullet, y: bullet.y - bullet.speed }))
           .filter((bullet) => bullet.y > -bullet.height)
-          .slice(0, 30); // Limit bullets to 30 for 60fps performance
+          .slice(0, isMobile ? 15 : 30); // Limit bullets to 15 on mobile, 30 on desktop
 
-        // Update enemy bullets - Optimized with bullet limit
-        // Balanced enemy bullet limit for all platforms
-        const maxEnemyBullets = 15; // Same limit for all platforms to prevent spam
+        // Update enemy bullets - Optimized with bullet limit for mobile
+        const maxEnemyBullets = isMobile ? 8 : 15; // Reduced limit on mobile
         newState.enemyBullets = newState.enemyBullets
           .map((bullet) => ({
             ...bullet,
             y: bullet.y + bullet.speed * timeSlowBulletFactor,
           }))
           .filter((bullet) => bullet.y < GAME_CONFIG.CANVAS_HEIGHT)
-          .slice(0, maxEnemyBullets); // Consistent bullet limit
+          .slice(0, maxEnemyBullets); // Mobile-optimized bullet limit
 
         // Update enemies - Optimized with enemy limit
         newState.enemies = newState.enemies
@@ -1132,7 +1087,7 @@ export const useGameState = () => {
             }
             return true;
           })
-          .slice(0, 8); // Limit enemies to 8 for better gameplay balance
+          .slice(0, isMobile ? 5 : 8); // Limit enemies to 5 on mobile, 8 on desktop
 
         // Update power-ups
         newState.powerUps = newState.powerUps
@@ -1166,19 +1121,7 @@ export const useGameState = () => {
           .map((explosion) => ({ ...explosion, frame: explosion.frame + 1 }))
           .filter((explosion) => explosion.frame < explosion.maxFrames);
 
-        // Update particles
-        newState.particles = newState.particles
-          .map((particle) => ({
-            ...particle,
-            x: particle.x + particle.vx,
-            y: particle.y + particle.vy,
-            vx: particle.vx * 0.98, // Air resistance
-            vy: particle.vy * 0.98 + (particle.type === "smoke" ? -0.1 : 0.05), // Gravity/float
-            life: particle.life - 1,
-            size: particle.size * 0.99, // Shrink over time
-          }))
-          .filter((particle) => particle.life > 0)
-          .slice(0, 100); // Limit particles for performance
+        // Particles removed for better mobile performance - using explosion images instead
 
         // Update boss (only when not paused)
         if (newState.boss && newState.boss.isActive && !gameState.isPaused) {
@@ -1974,16 +1917,20 @@ export const useGameState = () => {
                 // Resume enemy spawning after boss defeat
                 setGameState((prev) => {
                   const newLevel = prev.level;
+                  // Mobile-optimized post-boss spawn rates
+                  const baseSpawnInterval = isMobile ? 4000 : 3000;
+                  const baseWaveInterval = isMobile ? 12000 : 10000;
                   const newSpawnInterval = Math.max(
-                    3000,
+                    baseSpawnInterval,
                     6000 - (newLevel - 1) * 200
                   );
                   const newWaveInterval = Math.max(
-                    10000,
+                    baseWaveInterval,
                     18000 - (newLevel - 1) * 600
                   );
+                  const maxWaveEnemies = isMobile ? 2 : 3;
                   const newWaveEnemyCount = Math.min(
-                    3,
+                    maxWaveEnemies,
                     2 + Math.floor((newLevel - 1) / 4)
                   );
 
@@ -1995,10 +1942,12 @@ export const useGameState = () => {
                   waveSpawnRef.current = window.setInterval(() => {
                     for (let i = 0; i < newWaveEnemyCount; i++) spawnEnemy();
                   }, newWaveInterval);
+                  // Mobile-optimized power-up spawn after boss defeat
+                  const powerUpInterval = isMobile ? 10000 : 5000;
                   powerUpSpawnRef.current = window.setInterval(
                     spawnPowerUp,
-                    5000
-                  ); // Much more frequent power-ups
+                    powerUpInterval
+                  );
 
                   return prev; // Don't change state, just start spawning
                 });
@@ -2428,17 +2377,21 @@ export const useGameState = () => {
               clearInterval(enemySpawnRef.current);
               clearInterval(waveSpawnRef.current);
 
-              // Yeni level'a göre spawn hızlarını ayarla - Daha hızlı
+              // Mobile-optimized level progression spawn rates
+              const baseSpawnInterval = isMobile ? 2000 : 1500; // Slower base on mobile
+              const baseWaveInterval = isMobile ? 8000 : 6000; // Slower base on mobile
               const newSpawnInterval = Math.max(
-                1500,
+                baseSpawnInterval,
                 5000 - (newLevel - 1) * 200
               );
               const newWaveInterval = Math.max(
-                6000,
+                baseWaveInterval,
                 12000 - (newLevel - 1) * 500
               );
+              // Mobile-optimized wave enemy count
+              const maxWaveEnemies = isMobile ? 3 : 4; // Fewer enemies per wave on mobile
               const newWaveEnemyCount = Math.min(
-                4,
+                maxWaveEnemies,
                 2 + Math.floor((newLevel - 1) / 3)
               );
 
