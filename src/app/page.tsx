@@ -701,8 +701,6 @@ export default function Home() {
         )}
         {currentScreen === 'game' && (
           <SpaceImpactGame
-            isWalletConnected={isConnected}
-            walletAddress={address}
             onBackToMenu={() => setCurrentScreen('mainMenu')}
           />
         )}

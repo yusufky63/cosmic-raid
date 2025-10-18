@@ -19,25 +19,52 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
   const scaleRef = useRef(1);
   const dprRef = useRef(1);
 
-  // Load game images
+  // Optimized image loading for mobile performance
   useEffect(() => {
-    const imageUrls = {
-      // Player ships
+    // Priority-based image loading: Load essential images first
+    const essentialImages = {
+      // Player ships - always needed
       ship: '/images/ships/player/player-ship-basic.png',
+      // Basic enemies - most common
+      enemyBasic: '/images/ships/enemy/enemy-basic.png',
+      enemyShooter: '/images/ships/enemy/enemy-shooter.png',
+      // Essential power-ups
+      heart: '/images/power-up/heart.png',
+      doubleShot: '/images/power-up/double-shot.png',
+      // Basic effects
+      explosion: '/images/effects/explosion.png',
+    };
+
+    const secondaryImages = {
+      // Advanced player ships - loaded after essentials
       shipElite: '/images/ships/player/player-ship-elite.png',
       shipCommander: '/images/ships/player/player-ship-commander.png',
       shipLegend: '/images/ships/player/player-ship-legend.png',
-      shipSupreme: '/images/ships/player/player-ship-dreadnought.png', // Added missing supreme ship
+      shipSupreme: '/images/ships/player/player-ship-dreadnought.png',
       
-      // Enemy ships
-      enemyBasic: '/images/ships/enemy/enemy-basic.png',
-      enemyShooter: '/images/ships/enemy/enemy-shooter.png',
+      // Advanced enemies
       enemyKamikaze: '/images/ships/enemy/enemy-kamikaze.png',
       enemyBomber: '/images/ships/enemy/enemy-bomber.png',
       enemyStealth: '/images/ships/enemy/enemy-stealth.png',
       enemyAssassin: '/images/ships/enemy/enemy-assassin.png',
       
-      // Boss ships - Swapped destroyer and interceptor images
+      // More power-ups
+      speedBoost: '/images/power-up/speed-boost.png',
+      shield: '/images/power-up/shield.png',
+      tripleShot: '/images/power-up/triple-shot.png',
+      laserBeam: '/images/power-up/laser-beam.png',
+      invincibility: '/images/power-up/invincibility.png',
+      magnet: '/images/power-up/magnet.png',
+      timeSlow: '/images/power-up/time-slow.png',
+      powerUpGlow: '/images/power-up/power-up-glow.png',
+      
+      // Effects
+      shieldEffect: '/images/effects/shield-effect.png',
+      engineTrail: '/images/effects/engine-trail.png',
+    };
+
+    const bossImages = {
+      // Boss ships - loaded on demand when needed
       bossDestroyer: '/images/ships/boss/boss-interceptor.png',
       bossInterceptor: '/images/ships/boss/boss-destroyer.png',
       bossCruiser: '/images/ships/boss/boss-cruiser.png',
@@ -48,59 +75,67 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       bossBehemoth: '/images/ships/boss/boss-behemoth.png',
       bossLeviathan: '/images/ships/boss/boss-leviathan.png',
       bossColossus: '/images/ships/boss/boss-colossus.png',
-      
-      // Power-ups
-      heart: '/images/power-up/heart.png',
-      doubleShot: '/images/power-up/double-shot.png',
-      speedBoost: '/images/power-up/speed-boost.png',
-      shield: '/images/power-up/shield.png',
-      
-      // Power-ups
-      tripleShot: '/images/power-up/triple-shot.png',
-      laserBeam: '/images/power-up/laser-beam.png',
-      invincibility: '/images/power-up/invincibility.png',
-      magnet: '/images/power-up/magnet.png',
-      timeSlow: '/images/power-up/time-slow.png',
-      powerUpGlow: '/images/power-up/power-up-glow.png',
-      
-      // Effects
-      explosion: '/images/effects/explosion.png',
-      shieldEffect: '/images/effects/shield-effect.png',
-      engineTrail: '/images/effects/engine-trail.png',
-    } as const;
+    };
 
     const loaded: { [key: string]: HTMLImageElement } = {};
-    let count = 0;
-    const total = Object.keys(imageUrls).length;
 
-    Object.entries(imageUrls).forEach(([key, url]) => {
-      const img = new Image();
-      img.onload = () => {
-        loaded[key] = img;
-        count++;
-        // Debug laser beam loading
-        if (key === 'laserBeam') {
-          console.log(`🎯 GameCanvas: Laser beam image loaded successfully for key: ${key}, URL: ${url}`);
-        }
-        if (count === total) {
-          setImages(loaded);
-          setImagesLoaded(true);
-          // Debug: Check if laser beam is in final loaded images
-          console.log(`📦 GameCanvas: All images loaded. LaserBeam available: ${!!loaded.laserBeam}`);
-        }
-      };
-      img.onerror = () => {
-        count++;
-        // Debug laser beam loading error
-        if (key === 'laserBeam') {
-          console.error(`💥 GameCanvas: Failed to load laser beam image for key: ${key}, URL: ${url}`);
-        }
-        if (count === total) {
-          setImages(loaded);
-          setImagesLoaded(true);
-        }
-      };
-      img.src = url;
+    // Helper function to load images with retry and compression
+    const loadImageBatch = (imageUrls: Record<string, string>, onComplete: () => void) => {
+      let count = 0;
+      const total = Object.keys(imageUrls).length;
+      
+      if (total === 0) {
+        onComplete();
+        return;
+      }
+
+      Object.entries(imageUrls).forEach(([key, url]) => {
+        const img = new Image();
+        
+        // Optimize images for mobile
+        img.loading = 'eager'; // Load immediately for essential images
+        img.decoding = 'async'; // Decode asynchronously
+        
+        img.onload = () => {
+          loaded[key] = img;
+          count++;
+          if (key === 'laserBeam') {
+            console.log(`🎯 GameCanvas: Laser beam image loaded successfully`);
+          }
+          if (count === total) {
+            onComplete();
+          }
+        };
+        
+        img.onerror = (error) => {
+          console.warn(`⚠️ Failed to load image: ${key}`, error);
+          count++;
+          if (count === total) {
+            onComplete();
+          }
+        };
+        
+        img.src = url;
+      });
+    };
+
+    // Progressive loading: Essential -> Secondary -> Boss images
+    loadImageBatch(essentialImages, () => {
+      setImages({ ...loaded });
+      setImagesLoaded(true); // Allow game to start with essential images
+      console.log('📦 Essential images loaded, game ready!');
+
+      // Load secondary images
+      loadImageBatch(secondaryImages, () => {
+        setImages({ ...loaded });
+        console.log('📦 Secondary images loaded');
+
+        // Load boss images on demand
+        loadImageBatch(bossImages, () => {
+          setImages({ ...loaded });
+          console.log('📦 All images loaded');
+        });
+      });
     });
   }, []);
 
@@ -135,67 +170,55 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
     };
   }, []);
 
-  // Dark starfield background - optimized and minimal
+  // Mobile-optimized starfield background - reduced complexity for better performance
   const drawBackground = useCallback((ctx: CanvasRenderingContext2D) => {
-    const time = Date.now() * 0.0005; // Slower movement for subtle effect
+    const time = Date.now() * 0.0003; // Even slower for mobile performance
     
-    // Dark space gradient - minimal and clean
+    // Simple dark gradient - optimized for mobile
     const gradient = ctx.createLinearGradient(0, 0, 0, GAME_CONFIG.CANVAS_HEIGHT);
-    gradient.addColorStop(0, '#000510'); // Very dark blue
-    gradient.addColorStop(0.5, '#000208'); // Almost black  
-    gradient.addColorStop(1, '#000000'); // Pure black
+    gradient.addColorStop(0, '#000510');
+    gradient.addColorStop(1, '#000000');
     
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, GAME_CONFIG.CANVAS_WIDTH, GAME_CONFIG.CANVAS_HEIGHT);
     
     ctx.save();
     
-    // Main starfield - white stars only
+    // Reduced star count for mobile performance (was 80, now 40)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    for (let i = 0; i < 80; i++) {
-      const x = (i * 127.3 + time * 6) % GAME_CONFIG.CANVAS_WIDTH;
-      const y = (i * 83.7 + time * 3) % GAME_CONFIG.CANVAS_HEIGHT;
-      const size = Math.random() > 0.7 ? 2 : 1; // Mostly small stars
-      const twinkle = Math.sin(time * 3 + i) * 0.2 + 0.8;
+    for (let i = 0; i < 40; i++) {
+      const x = (i * 127.3 + time * 4) % GAME_CONFIG.CANVAS_WIDTH;
+      const y = (i * 83.7 + time * 2) % GAME_CONFIG.CANVAS_HEIGHT;
+      const size = i % 4 === 0 ? 2 : 1; // Deterministic size for performance
+      const twinkle = Math.sin(time * 2 + i) * 0.2 + 0.8;
       
       ctx.globalAlpha = twinkle * 0.7;
       ctx.fillRect(x, y, size, size);
     }
     
-    // Brighter distant stars
+    // Fewer bright stars for mobile (was 20, now 10)
     ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-    for (let i = 0; i < 20; i++) {
-      const x = (i * 213.1 + time * 4) % GAME_CONFIG.CANVAS_WIDTH;
-      const y = (i * 157.9 + time * 2) % GAME_CONFIG.CANVAS_HEIGHT;
+    for (let i = 0; i < 10; i++) {
+      const x = (i * 213.1 + time * 3) % GAME_CONFIG.CANVAS_WIDTH;
+      const y = (i * 157.9 + time * 1.5) % GAME_CONFIG.CANVAS_HEIGHT;
       const size = 1.5;
-      const twinkle = Math.sin(time * 2 + i * 0.5) * 0.3 + 0.7;
+      const twinkle = Math.sin(time * 1.5 + i * 0.5) * 0.3 + 0.7;
       
       ctx.globalAlpha = twinkle;
       ctx.fillRect(x, y, size, size);
     }
     
-    // Very few accent stars - subtle color
-    ctx.fillStyle = 'rgba(100, 150, 255, 0.6)'; // Subtle blue
-    for (let i = 0; i < 5; i++) {
-      const x = (i * 341.7 + time * 10) % GAME_CONFIG.CANVAS_WIDTH;
-      const y = (i * 197.3 + time * 8) % GAME_CONFIG.CANVAS_HEIGHT;
+    // Minimal accent stars for mobile performance (was 5, now 3)
+    ctx.fillStyle = 'rgba(100, 150, 255, 0.6)';
+    for (let i = 0; i < 3; i++) {
+      const x = (i * 341.7 + time * 6) % GAME_CONFIG.CANVAS_WIDTH;
+      const y = (i * 197.3 + time * 4) % GAME_CONFIG.CANVAS_HEIGHT;
       const size = 1;
-      const pulse = Math.sin(time * 1.5 + i) * 0.4 + 0.6;
+      const pulse = Math.sin(time + i) * 0.4 + 0.6;
       
       ctx.globalAlpha = pulse * 0.5;
       ctx.fillRect(x, y, size, size);
     }
-    
-    // Very subtle nebula hint - barely visible
-    ctx.globalAlpha = 0.03;
-    const nebulaGradient = ctx.createRadialGradient(
-      GAME_CONFIG.CANVAS_WIDTH * 0.7, GAME_CONFIG.CANVAS_HEIGHT * 0.3, 0,
-      GAME_CONFIG.CANVAS_WIDTH * 0.7, GAME_CONFIG.CANVAS_HEIGHT * 0.3, 200
-    );
-    nebulaGradient.addColorStop(0, '#1a1a40');
-    nebulaGradient.addColorStop(1, 'transparent');
-    ctx.fillStyle = nebulaGradient;
-    ctx.fillRect(0, 0, GAME_CONFIG.CANVAS_WIDTH, GAME_CONFIG.CANVAS_HEIGHT);
     
     ctx.restore();
   }, []);
@@ -307,9 +330,33 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ gameObjects, gameState, 
       const isLaserBeam = (bullet.damage ?? 1) >= 5 && bullet.width >= 30; // Laser beam detection
       
       if (isLaserBeam) {
-        // LASER BEAM - Epic wide beam effect
+        // LASER BEAM - Epic wide beam effect with engine trail
         const beamWidth = bullet.width;
         const beamHeight = bullet.height;
+        
+        // Enhanced trail effect using engine-trail image
+        const trail = images.engineTrail;
+        if (trail) {
+          ctx.save();
+          // Draw multiple trail instances for epic laser effect
+          for (let i = 1; i <= 5; i++) {
+            const trailOffset = i * 15;
+            const trailAlpha = 0.6 / i; // Fading trail
+            const trailWidth = beamWidth + (i * 4); // Expanding trail
+            const trailHeight = beamHeight * 0.8;
+            
+            ctx.globalAlpha = trailAlpha;
+            ctx.filter = `hue-rotate(${i * 30}deg) saturate(150%)`; // Rainbow effect
+            ctx.drawImage(trail, 
+              bullet.x - (i * 2), 
+              bullet.y + trailOffset, 
+              trailWidth, 
+              trailHeight
+            );
+          }
+          ctx.filter = 'none';
+          ctx.restore();
+        }
         
         // Outer glow - wide red/orange aura
         ctx.shadowColor = '#FF4500';

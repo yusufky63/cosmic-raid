@@ -33,6 +33,7 @@ const initialGameState: GameState = {
   isInvincible: false,
   invincibilityEndTime: 0,
   isFlashing: false,
+  hasShield: false,
   playerShotTier: 1,
   combo: {
     consecutiveHits: 0,
@@ -588,14 +589,14 @@ export const useGameState = () => {
       const enemyConfig = GAME_CONFIG.ENEMY_TYPES[enemyType];
       const newEnemy: Enemy = {
         x: Math.max(
-          8,
+          60, // Mobile-friendly: 60px margin from left edge
           Math.random() *
-            (GAME_CONFIG.CANVAS_WIDTH - GAME_CONFIG.ENEMY_SIZE - 16)
+            (GAME_CONFIG.CANVAS_WIDTH - GAME_CONFIG.ENEMY_SIZE - 120) + 60 // 60px margin from both edges
         ),
         y: -GAME_CONFIG.ENEMY_SIZE - 200, // Düşmanları daha uzaktan başlatıyorum (-200 ekstra)
         width: GAME_CONFIG.SHIP_WIDTH,
         height: GAME_CONFIG.SHIP_HEIGHT,
-        speed: enemyConfig.speed + (currentState.level - 1) * 0.2,
+        speed: enemyConfig.speed + Math.min(24, currentState.level - 1) * 0.2, // Cap speed increase at level 25
         type: enemyType,
         health: enemyConfig.health,
         lastShot: Date.now(),
@@ -668,7 +669,7 @@ export const useGameState = () => {
     }
 
     const newPowerUp: PowerUp = {
-      x: Math.random() * (GAME_CONFIG.CANVAS_WIDTH - GAME_CONFIG.POWER_UP_SIZE),
+      x: Math.max(40, Math.random() * (GAME_CONFIG.CANVAS_WIDTH - GAME_CONFIG.POWER_UP_SIZE - 80) + 40), // Mobile-friendly: 40px margins for power-ups
       y: -GAME_CONFIG.POWER_UP_SIZE - 100,
       width: GAME_CONFIG.POWER_UP_SIZE,
       height: GAME_CONFIG.POWER_UP_SIZE,
@@ -837,7 +838,7 @@ export const useGameState = () => {
     const cfg = GAME_CONFIG.ENEMY_TYPES[enemyType];
     const s = GAME_CONFIG.ENEMY_SIZE;
     const e: Enemy = {
-      x: Math.max(8, Math.random() * (GAME_CONFIG.CANVAS_WIDTH - s - 16)),
+      x: Math.max(60, Math.random() * (GAME_CONFIG.CANVAS_WIDTH - s - 120) + 60), // Mobile-friendly spawn margins
       y: -s - 200,
       width: s,
       height: s,
@@ -948,10 +949,14 @@ export const useGameState = () => {
         return;
       }
 
-      // FPS limiting - 60 FPS for smooth gameplay
+      // Adaptive FPS limiting for mobile performance
       const deltaTime = currentTime - lastTimeRef.current;
-      if (deltaTime < 16.67) {
-        // 60 FPS = 16.67ms per frame
+      const targetFPS = typeof window !== 'undefined' && 
+        (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) 
+        ? 45 : 60; // 45 FPS on mobile, 60 FPS on desktop
+      const frameTime = 1000 / targetFPS;
+      
+      if (deltaTime < frameTime) {
         gameLoopRef.current = requestAnimationFrame(gameLoop);
         return;
       }
@@ -962,6 +967,7 @@ export const useGameState = () => {
         newState.level = gameState.level; // Update level in gameObjects
         let scoreIncrease = 0;
         let livesLost = 0;
+        let tookDamageThisFrame = false; // Prevent multiple damage in same frame
         const magnetActive =
           gameState.powerUps?.some((p) => p.type === "magnet" && p.active) ||
           false;
@@ -1000,13 +1006,13 @@ export const useGameState = () => {
             const enemyConfig = GAME_CONFIG.ENEMY_TYPES[enemy.type];
             const now = Date.now();
 
-            // Scale enemy fire rate slightly with level (faster at higher levels)
+            // Scale enemy fire rate more gradually with level (much more balanced)
             const levelFireModifier = Math.max(
-              0.6,
-              1 - (gameState.level - 1) * 0.02
-            ); // down to 60%
+              0.75, // Don't go below 75% of base fire rate
+              1 - (gameState.level - 1) * 0.008 // Much gentler scaling: 0.8% per level
+            );
             const effectiveEnemyFireRate = Math.max(
-              300,
+              800, // Much higher minimum fire rate (was 300ms, now 800ms)
               Math.floor(enemyConfig.fireRate * levelFireModifier)
             );
             if (
@@ -1066,7 +1072,14 @@ export const useGameState = () => {
           })
           .filter((enemy) => {
             if (enemy.y > GAME_CONFIG.CANVAS_HEIGHT) {
-              livesLost += GAME_CONFIG.ENEMY_ESCAPE_DAMAGE;
+              // Shield protects only from physical attacks, not tactical failures (enemy escape)
+              // Invincibility protects from everything, including enemy escape
+              if (!gameState.isInvincible || gameState.hasShield) {
+                livesLost += GAME_CONFIG.ENEMY_ESCAPE_DAMAGE;
+                console.log(`💀 Enemy escaped! Shield: ${gameState.hasShield}, Invincible: ${gameState.isInvincible}`);
+              } else {
+                console.log(`⭐ Invincibility protected from enemy escape damage!`);
+              }
               return false;
             }
             return true;
@@ -1652,7 +1665,7 @@ export const useGameState = () => {
                 height: 45,
                 speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 0.3,
                 direction: "down" as const,
-                damage: 2,
+                damage: 1, // Reduced from 2 to 1 for better balance
               };
               newState.enemyBullets.push(specialBullet);
             } else if (boss.type === "interceptor") {
@@ -1668,7 +1681,7 @@ export const useGameState = () => {
                   height: 18,
                   speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 1.5,
                   direction: "down" as const,
-                  damage: 2,
+                  damage: 1, // Reduced from 2 to 1 for better balance
                 };
                 newState.enemyBullets.push(specialBullet);
               }
@@ -1684,7 +1697,7 @@ export const useGameState = () => {
                   height: 24,
                   speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 0.8,
                   direction: "down" as const,
-                  damage: 2,
+                  damage: 1, // Reduced from 2 to 1 for better balance
                 };
                 newState.enemyBullets.push(specialBullet);
               }
@@ -1699,7 +1712,7 @@ export const useGameState = () => {
                   height: 60,
                   speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 0.2,
                   direction: "down" as const,
-                  damage: 2,
+                  damage: 1, // Reduced from 2 to 1 for better balance
                 };
                 newState.enemyBullets.push(specialBullet);
               }
@@ -1716,7 +1729,7 @@ export const useGameState = () => {
                   height: 30,
                   speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 0.6,
                   direction: "down" as const,
-                  damage: 2,
+                  damage: 1, // Reduced from 2 to 1 for better balance
                 };
                 newState.enemyBullets.push(specialBullet);
               }
@@ -1731,7 +1744,7 @@ export const useGameState = () => {
                   height: 36,
                   speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 0.4,
                   direction: "down" as const,
-                  damage: 2,
+                  damage: 1, // Reduced from 2 to 1 for better balance
                 };
                 newState.enemyBullets.push(specialBullet);
               }
@@ -1744,7 +1757,7 @@ export const useGameState = () => {
                 height: 78,
                 speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 0.12,
                 direction: "down" as const,
-                damage: 2,
+                damage: 1, // Reduced from 2 to 1 for better balance
               };
               newState.enemyBullets.push(specialBullet);
             } else if (boss.type === "colossus") {
@@ -1760,7 +1773,7 @@ export const useGameState = () => {
                   height: 45,
                   speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 0.5,
                   direction: "down" as const,
-                  damage: 2,
+                  damage: 1, // Reduced from 2 to 1 for better balance
                 };
                 newState.enemyBullets.push(specialBullet);
               }
@@ -1777,7 +1790,7 @@ export const useGameState = () => {
                   height: 54,
                   speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 0.3,
                   direction: "down" as const,
-                  damage: 2,
+                  damage: 1, // Reduced from 2 to 1 for better balance
                 };
                 newState.enemyBullets.push(specialBullet);
               }
@@ -1793,7 +1806,7 @@ export const useGameState = () => {
                   height: 60,
                   speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 0.2,
                   direction: "down" as const,
-                  damage: 2,
+                  damage: 1, // Reduced from 2 to 1 for better balance
                 };
                 newState.enemyBullets.push(specialBullet);
               }
@@ -1949,9 +1962,10 @@ export const useGameState = () => {
         // Check enemy-ship collisions
         for (let i = newState.enemies.length - 1; i >= 0; i--) {
           const enemy = newState.enemies[i];
-          if (checkCollision(enemy, newState.ship) && !gameState.isInvincible) {
+          if (checkCollision(enemy, newState.ship) && !gameState.isInvincible && !tookDamageThisFrame) {
             newState.enemies.splice(i, 1);
             livesLost += 1;
+            tookDamageThisFrame = true; // Prevent additional damage this frame
             // Trigger vibration and invincibility
             if (navigator.vibrate) {
               navigator.vibrate([200, 100, 200]); // Vibration pattern
@@ -1963,6 +1977,7 @@ export const useGameState = () => {
               isFlashing: true,
               screenShake: 300, // 300ms screen shake for enemy collision
             }));
+            break; // Exit loop after taking damage
           }
         }
 
@@ -1971,9 +1986,11 @@ export const useGameState = () => {
           newState.boss &&
           newState.boss.isActive &&
           checkCollision(newState.boss, newState.ship) &&
-          !gameState.isInvincible
+          !gameState.isInvincible &&
+          !tookDamageThisFrame
         ) {
           livesLost += 1; // All damage sources cost 1 life
+          tookDamageThisFrame = true; // Prevent additional damage this frame
           // Trigger vibration and invincibility
           if (navigator.vibrate) {
             navigator.vibrate([300, 100, 300, 100, 300]); // Stronger vibration for boss
@@ -1991,32 +2008,54 @@ export const useGameState = () => {
         newState.enemyBullets = newState.enemyBullets.filter((bullet) => {
           if (
             checkCollision(bullet, newState.ship) &&
-            !gameState.isInvincible
+            !gameState.isInvincible &&
+            !tookDamageThisFrame
           ) {
-            const damage = bullet.damage ?? 1;
-            // Special attacks (damage > 1) cause full damage, others cause 1 life only
-            livesLost += damage > 1 ? damage : 1;
+            // All attacks now cause exactly 1 life damage for balanced gameplay
+            livesLost += 1; // Always 1 damage regardless of bullet type
+            tookDamageThisFrame = true; // Prevent additional damage this frame
             // Trigger vibration and invincibility
             if (navigator.vibrate) {
-              const vibrationPattern =
-                damage > 1 ? [250, 80, 250, 80, 250] : [150, 50, 150]; // Stronger feedback for heavy hits
-              navigator.vibrate(vibrationPattern);
+              navigator.vibrate([150, 50, 150]); // Standard feedback for all hits
             }
             setGameState((prev) => ({
               ...prev,
               isInvincible: true,
               invincibilityEndTime: Date.now() + 3000, // 3 seconds
               isFlashing: true,
-              screenShake: damage > 1 ? 400 : 250, // Stronger shake for heavy bullets
+              screenShake: 250, // Standard shake for all bullets
             }));
-            return false;
+            return false; // Remove the bullet that hit
           }
-          return true;
+          return true; // Keep bullet if no collision or already took damage this frame
         });
 
         // Check power-up-ship collisions
         newState.powerUps = newState.powerUps.filter((powerUp) => {
           if (checkCollision(powerUp, newState.ship)) {
+            // Check power-up capacity before adding timed power-ups
+            const shipConfig = GAME_CONFIG.getShipConfig(gameState.level);
+            const currentActivePowerUps = gameState.powerUps?.filter(p => p.active) || [];
+            const isTimedPowerUp = !['heart'].includes(powerUp.type); // Heart is instant, others are timed
+            
+            if (isTimedPowerUp && currentActivePowerUps.length >= shipConfig.powerUpCapacity) {
+              // Remove oldest active power-up to make room
+              const oldestPowerUp = currentActivePowerUps[0];
+              if (oldestPowerUp) {
+                setGameState((s) => ({
+                  ...s,
+                  powerUps: s.powerUps.filter(p => p !== oldestPowerUp),
+                  // Remove specific power-up effects
+                  hasDoubleShot: oldestPowerUp.type === 'doubleShot' ? false : s.hasDoubleShot,
+                  hasSpeedBoost: oldestPowerUp.type === 'speedBoost' ? false : s.hasSpeedBoost,
+                  isInvincible: ['invincibility', 'shield'].includes(oldestPowerUp.type) ? false : s.isInvincible,
+                  isFlashing: ['invincibility', 'shield'].includes(oldestPowerUp.type) ? false : s.isFlashing,
+                  hasShield: ['shield'].includes(oldestPowerUp.type) ? false : s.hasShield,
+                }));
+                console.log(`🔄 Power-up capacity full! Removed ${oldestPowerUp.type} to make room for ${powerUp.type}`);
+              }
+            }
+            
             // Apply power-up effect
             setGameState((prevState) => {
               const updatedState = { ...prevState };
@@ -2094,6 +2133,7 @@ export const useGameState = () => {
                   break;
                 case "shield":
                   updatedState.isInvincible = true;
+                  updatedState.hasShield = true; // Shield-specific protection
                   updatedState.invincibilityEndTime =
                     Date.now() + GAME_CONFIG.POWER_UP_DURATION;
                   updatedState.isFlashing = true;
@@ -2113,6 +2153,7 @@ export const useGameState = () => {
                       ...s,
                       isInvincible: false,
                       isFlashing: false,
+                      hasShield: false, // Remove shield protection
                       powerUps: s.powerUps.filter(
                         (p) => p.type !== "shield" || !p.active
                       ),
@@ -2121,8 +2162,9 @@ export const useGameState = () => {
                   break;
                 case "invincibility":
                   updatedState.isInvincible = true;
+                  updatedState.hasShield = false; // Full invincibility (not just shield)
                   updatedState.invincibilityEndTime =
-                    Date.now() + GAME_CONFIG.POWER_UP_DURATION * 2; // Longer duration
+                    Date.now() + 8000; // Reduced to 8 seconds for better balance
                   updatedState.isFlashing = true;
                   updatedState.powerUps = [
                     ...updatedState.powerUps.filter(
@@ -2131,8 +2173,8 @@ export const useGameState = () => {
                     {
                       ...powerUp,
                       active: true,
-                      duration: GAME_CONFIG.POWER_UP_DURATION * 2,
-                      endTime: Date.now() + GAME_CONFIG.POWER_UP_DURATION * 2,
+                      duration: 8000, // 8 seconds
+                      endTime: Date.now() + 8000,
                     },
                   ];
                   setTimeout(() => {
@@ -2140,11 +2182,12 @@ export const useGameState = () => {
                       ...s,
                       isInvincible: false,
                       isFlashing: false,
+                      hasShield: false, // Remove all protection
                       powerUps: s.powerUps.filter(
                         (p) => p.type !== "invincibility" || !p.active
                       ),
                     }));
-                  }, GAME_CONFIG.POWER_UP_DURATION * 2);
+                  }, 8000); // 8 seconds
                   break;
                 case "magnet":
                   // Magnet effect - attract nearby power-ups
@@ -2228,6 +2271,7 @@ export const useGameState = () => {
             ...prev,
             isInvincible: false,
             isFlashing: false,
+            hasShield: false, // Remove all protection when timer ends
           }));
         }
 
@@ -2247,7 +2291,7 @@ export const useGameState = () => {
           setGameState((prevState) => {
             const newScore = prevState.score + scoreIncrease;
             const newLives = Math.max(0, prevState.lives - livesLost);
-            // Level progression based on score since level start to prevent sudden jumps
+            // Progressive level system: 40, 60, 80, 100... enemies per level
             let newLevel = prevState.level;
             let newScoreAtLevelStart = prevState.scoreAtLevelStart;
             if (!prevState.isBossFight && !prevState.bossJustDefeated) {
@@ -2255,17 +2299,16 @@ export const useGameState = () => {
                 0,
                 newScore - prevState.scoreAtLevelStart
               );
-              const levelIncrements = Math.floor(
-                progressSinceLevelStart / GAME_CONFIG.LEVEL_UP_THRESHOLD
-              );
-              if (levelIncrements > 0) {
-                newLevel = Math.min(
-                  GAME_CONFIG.MAX_LEVEL,
-                  prevState.level + levelIncrements
-                );
-                newScoreAtLevelStart =
-                  prevState.scoreAtLevelStart +
-                  levelIncrements * GAME_CONFIG.LEVEL_UP_THRESHOLD;
+              
+              // Calculate required score for next level: 400 + (currentLevel-1) * 200
+              // Level 1: 400 points (40 enemies), Level 2: 600 points (60 enemies), etc.
+              const requiredScoreForNextLevel = GAME_CONFIG.LEVEL_UP_THRESHOLD + (prevState.level - 1) * 200;
+              
+              if (progressSinceLevelStart >= requiredScoreForNextLevel) {
+                // Level up!
+                newLevel = Math.min(GAME_CONFIG.MAX_LEVEL, prevState.level + 1);
+                newScoreAtLevelStart = prevState.scoreAtLevelStart + requiredScoreForNextLevel;
+                console.log(`🎉 Level Up! ${prevState.level} → ${newLevel}, Required: ${requiredScoreForNextLevel} points (~${requiredScoreForNextLevel/10} enemies)`);
               }
             }
 
@@ -2383,6 +2426,7 @@ export const useGameState = () => {
       gameState.level,
       gameState.isInvincible,
       gameState.invincibilityEndTime,
+      gameState.hasShield,
       gameState.powerUps,
       gameState.combo,
       gameState.screenShake,

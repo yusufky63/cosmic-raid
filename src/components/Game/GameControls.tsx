@@ -174,10 +174,25 @@ export const GameControls: React.FC<GameControlsProps> = ({
       {/* Enhanced Pause Button */}
       <div className="absolute top-4 right-4" style={{ zIndex: 30 }}>
         <button
-          onClick={onPause}
-          className="font-bold text-sm transition-all duration-200 font-orbitron"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onPause();
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onPause();
+          }}
+          className="font-bold text-sm transition-all duration-200 font-orbitron select-none"
           style={{
-            padding: "10px 16px",
+            padding: "12px 18px", // Slightly larger touch area for mobile
+            minWidth: "50px", // Ensure minimum touch target size
+            minHeight: "44px", // iOS recommended minimum touch target
             background: isPaused
               ? "linear-gradient(135deg, #00bfff, #0080ff)"
               : "linear-gradient(135deg, rgba(0,0,0,0.8), rgba(20,20,20,0.9))",
@@ -191,6 +206,11 @@ export const GameControls: React.FC<GameControlsProps> = ({
               ? "0 0 20px rgba(0,191,255,0.3), 0 4px 15px rgba(0,0,0,0.2)"
               : "0 0 15px rgba(0,0,0,0.5), 0 4px 10px rgba(0,0,0,0.3)",
             zIndex: 30,
+            WebkitTapHighlightColor: 'transparent', // Remove tap highlight on mobile
+            userSelect: 'none', // Prevent text selection
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "scale(1.05) translateY(-1px)";

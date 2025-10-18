@@ -7,14 +7,10 @@ import { GameUI } from './GameUI';
 import { useGameState } from '@/hooks/useGameState';
 
 interface SpaceImpactGameProps {
-  isWalletConnected?: boolean;
-  walletAddress?: string;
   onBackToMenu: () => void;
 }
 
 export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
-  isWalletConnected = false,
-  walletAddress,
   onBackToMenu,
 }) => {
   const {
@@ -49,11 +45,6 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
         <div id="score">Score: <span>{gameState.score.toLocaleString()}</span></div>
         <div id="level">Lvl: <span>{gameState.level}</span></div>
         <div id="lives">Lives: <span>{gameState.lives}</span></div>
-        <div id="wallet">
-          Wallet: <span>
-            {isWalletConnected ? `${walletAddress?.slice(0, 4)}...${walletAddress?.slice(-3)}` : '-'}
-          </span>
-        </div>
       </div>
 
       {/* Main wrapper (old layout via #game-wrapper) */}
