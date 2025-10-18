@@ -196,7 +196,7 @@ export const useGameState = () => {
       if (!gameState.isPlaying || gameState.isPaused) return;
 
       setGameObjects((prev) => {
-        const speed = GAME_CONFIG.SHIP_SPEED; // 15 - daha hızlı
+        const speed = isMobile ? GAME_CONFIG.SHIP_SPEED * 1.5 : GAME_CONFIG.SHIP_SPEED; // 50% faster on mobile
         const newX =
           direction === "left"
             ? Math.max(0, prev.ship.x - speed)
@@ -211,7 +211,7 @@ export const useGameState = () => {
         };
       });
     },
-    [gameState.isPlaying, gameState.isPaused]
+    [gameState.isPlaying, gameState.isPaused, isMobile]
   );
 
   // Move ship to position - touch-based movement for modern mobile controls
@@ -228,9 +228,9 @@ export const useGameState = () => {
           Math.min(canvasWidth - shipWidth, targetX)
         );
 
-        // Smooth movement to prevent jarring
+        // Smooth movement to prevent jarring - Much faster on mobile
         const currentX = prev.ship.x;
-        const maxMovePerFrame = 20; // Max pixels per frame for smooth movement
+        const maxMovePerFrame = isMobile ? 35 : 20; // Much faster movement on mobile
         const deltaX = clampedX - currentX;
         const smoothX =
           Math.abs(deltaX) > maxMovePerFrame
@@ -243,7 +243,7 @@ export const useGameState = () => {
         };
       });
     },
-    [gameState.isPlaying, gameState.isPaused]
+    [gameState.isPlaying, gameState.isPaused, isMobile]
   );
 
   // Fire bullet with cooldown - Level based shooting
@@ -253,11 +253,11 @@ export const useGameState = () => {
     const now = Date.now();
     const scoreFireBonus = Math.floor(gameState.score / 1000) * 10; // Every 1000 points = 10ms faster
     const levelFireBonus = (gameState.level - 1) * 5; // Each level = 5ms faster
-    const baseFireRate = 400;
+    const baseFireRate = isMobile ? 200 : 400; // Much faster base fire rate on mobile
     const playerFireRate = Math.max(
-      200,
+      isMobile ? 100 : 200, // Even faster minimum on mobile
       baseFireRate - scoreFireBonus - levelFireBonus
-    ); // Slower shooting with progress
+    );
 
     // Check cooldown
     if (now - lastPlayerShotRef.current < playerFireRate) {
@@ -275,8 +275,9 @@ export const useGameState = () => {
       const newBullets: Bullet[] = [];
       const scoreSpeedBonus = Math.floor(gameState.score / 2000) * 1; // Every 2000 points = +1 speed
       const levelSpeedBonus = (gameState.level - 1) * 0.5; // Each level = +0.5 speed
+      const mobileSpeedBonus = isMobile ? 3 : 0; // Much faster bullets on mobile
       const bulletSpeed =
-        GAME_CONFIG.BULLET_SPEED + scoreSpeedBonus + levelSpeedBonus; // Slower bullets with progress
+        GAME_CONFIG.BULLET_SPEED + scoreSpeedBonus + levelSpeedBonus + mobileSpeedBonus;
               // Level-based bullet size: reduce by 20px for levels 20+ (Commander/Legend/Supreme)
               const baseBulletSize = Math.min(
         8,
@@ -565,7 +566,7 @@ export const useGameState = () => {
         y: -GAME_CONFIG.ENEMY_SIZE - 200, // Düşmanları daha uzaktan başlatıyorum (-200 ekstra)
         width: GAME_CONFIG.SHIP_WIDTH,
         height: GAME_CONFIG.SHIP_HEIGHT,
-        speed: enemyConfig.speed + Math.min(24, currentState.level - 1) * 0.2, // Cap speed increase at level 25
+        speed: enemyConfig.speed + Math.min(24, currentState.level - 1) * (isMobile ? 0.4 : 0.2), // Much faster enemies on mobile
         type: enemyType,
         health: enemyConfig.health,
         lastShot: Date.now(),
@@ -584,7 +585,7 @@ export const useGameState = () => {
 
       return currentState; // State'i değiştirme
     });
-  }, []);
+  }, [isMobile]);
 
   // Spawn power-up with intelligent selection
   const spawnPowerUp = useCallback(() => {
@@ -822,22 +823,22 @@ export const useGameState = () => {
     setTimeout(() => {
       console.log("Starting enemy spawn intervals...");
 
-      // Mobile-optimized spawn rate: Slower for better performance
-      const spawnInterval = isMobile ? 2500 : 1800; // 2.5s on mobile, 1.8s on desktop
+      // Mobile-optimized spawn rate: Much faster for better gameplay
+      const spawnInterval = isMobile ? 1200 : 1800; // 1.2s on mobile (much faster), 1.8s on desktop
       enemySpawnRef.current = window.setInterval(() => {
         console.log("Spawn interval triggered");
         spawnEnemy();
       }, spawnInterval);
 
-      // Mobile-optimized wave spawn: Slower for better performance
-      const waveInterval = isMobile ? 7000 : 5000; // 7s on mobile, 5s on desktop
+      // Mobile-optimized wave spawn: Much faster for better gameplay
+      const waveInterval = isMobile ? 3000 : 5000; // 3s on mobile (much faster), 5s on desktop
       waveSpawnRef.current = window.setInterval(() => {
         console.log("Wave spawn interval triggered");
         spawnEnemy();
       }, waveInterval);
 
-      // Mobile-optimized power-up spawn: Less frequent for better performance
-      const powerUpInterval = isMobile ? 8000 : 5000; // 8s on mobile, 5s on desktop
+      // Mobile-optimized power-up spawn: More frequent for better gameplay
+      const powerUpInterval = isMobile ? 4000 : 5000; // 4s on mobile (more frequent), 5s on desktop
       powerUpSpawnRef.current = window.setInterval(spawnPowerUp, powerUpInterval);
 
       console.log("All spawn intervals started");
@@ -867,9 +868,9 @@ export const useGameState = () => {
         // Resume - restart spawning if not in boss fight
         if (!prev.isBossFight) {
           const currentLevel = prev.level;
-          // Mobile-optimized resume spawn rates
-          const baseSpawnInterval = isMobile ? 2000 : 1500;
-          const baseWaveInterval = isMobile ? 8000 : 6000;
+          // Mobile-optimized resume spawn rates - Much faster for better gameplay
+          const baseSpawnInterval = isMobile ? 800 : 1500;
+          const baseWaveInterval = isMobile ? 2000 : 6000;
           const newSpawnInterval = Math.max(
             baseSpawnInterval,
             5000 - (currentLevel - 1) * 200
@@ -878,7 +879,7 @@ export const useGameState = () => {
             baseWaveInterval,
             12000 - (currentLevel - 1) * 500
           );
-          const maxWaveEnemies = isMobile ? 3 : 4;
+          const maxWaveEnemies = isMobile ? 5 : 4; // More enemies per wave on mobile
           const newWaveEnemyCount = Math.min(
             maxWaveEnemies,
             2 + Math.floor((currentLevel - 1) / 3)
@@ -891,8 +892,8 @@ export const useGameState = () => {
           waveSpawnRef.current = window.setInterval(() => {
             for (let i = 0; i < newWaveEnemyCount; i++) spawnEnemy();
           }, newWaveInterval);
-          // Mobile-optimized power-up spawn on resume
-          const powerUpInterval = isMobile ? 8000 : 5000;
+          // Mobile-optimized power-up spawn on resume - Much more frequent
+          const powerUpInterval = isMobile ? 3000 : 5000;
           powerUpSpawnRef.current = window.setInterval(spawnPowerUp, powerUpInterval);
         }
       }
@@ -1917,9 +1918,9 @@ export const useGameState = () => {
                 // Resume enemy spawning after boss defeat
                 setGameState((prev) => {
                   const newLevel = prev.level;
-                  // Mobile-optimized post-boss spawn rates
-                  const baseSpawnInterval = isMobile ? 4000 : 3000;
-                  const baseWaveInterval = isMobile ? 12000 : 10000;
+                  // Mobile-optimized post-boss spawn rates - Much faster for better gameplay
+                  const baseSpawnInterval = isMobile ? 1000 : 3000;
+                  const baseWaveInterval = isMobile ? 3000 : 10000;
                   const newSpawnInterval = Math.max(
                     baseSpawnInterval,
                     6000 - (newLevel - 1) * 200
@@ -1928,7 +1929,7 @@ export const useGameState = () => {
                     baseWaveInterval,
                     18000 - (newLevel - 1) * 600
                   );
-                  const maxWaveEnemies = isMobile ? 2 : 3;
+                  const maxWaveEnemies = isMobile ? 4 : 3; // More enemies per wave on mobile
                   const newWaveEnemyCount = Math.min(
                     maxWaveEnemies,
                     2 + Math.floor((newLevel - 1) / 4)
@@ -1942,8 +1943,8 @@ export const useGameState = () => {
                   waveSpawnRef.current = window.setInterval(() => {
                     for (let i = 0; i < newWaveEnemyCount; i++) spawnEnemy();
                   }, newWaveInterval);
-                  // Mobile-optimized power-up spawn after boss defeat
-                  const powerUpInterval = isMobile ? 10000 : 5000;
+                  // Mobile-optimized power-up spawn after boss defeat - Much more frequent
+                  const powerUpInterval = isMobile ? 2000 : 5000;
                   powerUpSpawnRef.current = window.setInterval(
                     spawnPowerUp,
                     powerUpInterval
@@ -2377,9 +2378,9 @@ export const useGameState = () => {
               clearInterval(enemySpawnRef.current);
               clearInterval(waveSpawnRef.current);
 
-              // Mobile-optimized level progression spawn rates
-              const baseSpawnInterval = isMobile ? 2000 : 1500; // Slower base on mobile
-              const baseWaveInterval = isMobile ? 8000 : 6000; // Slower base on mobile
+              // Mobile-optimized level progression spawn rates - Much faster for better gameplay
+              const baseSpawnInterval = isMobile ? 800 : 1500; // Much faster base on mobile
+              const baseWaveInterval = isMobile ? 2000 : 6000; // Much faster base on mobile
               const newSpawnInterval = Math.max(
                 baseSpawnInterval,
                 5000 - (newLevel - 1) * 200
@@ -2388,8 +2389,8 @@ export const useGameState = () => {
                 baseWaveInterval,
                 12000 - (newLevel - 1) * 500
               );
-              // Mobile-optimized wave enemy count
-              const maxWaveEnemies = isMobile ? 3 : 4; // Fewer enemies per wave on mobile
+              // Mobile-optimized wave enemy count - More enemies for faster gameplay
+              const maxWaveEnemies = isMobile ? 5 : 4; // More enemies per wave on mobile
               const newWaveEnemyCount = Math.min(
                 maxWaveEnemies,
                 2 + Math.floor((newLevel - 1) / 3)
