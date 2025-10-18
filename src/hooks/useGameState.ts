@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   GameState,
   GameObjects,
@@ -74,6 +74,27 @@ export const useGameState = () => {
   const waveSpawnRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   const lastPlayerShotRef = useRef<number>(0);
+  
+  // Mobile detection for optimized firing rates and performance
+  const isMobile = typeof window !== 'undefined' && 
+    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+     ('ontouchstart' in window && navigator.maxTouchPoints > 0) || // Better touch detection
+     (window.innerWidth <= 768 && 'ontouchstart' in window)); // Only count small screens with touch support
+  
+  // Debug log for mobile detection (only log once)
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const touchSupport = 'ontouchstart' in window && navigator.maxTouchPoints > 0;
+      const screenSize = window.innerWidth <= 768;
+      console.log(`🎮 Game Mode Detection:
+        - User Agent Mobile: ${userAgent}
+        - Touch Support: ${touchSupport} (maxTouchPoints: ${navigator.maxTouchPoints || 0})
+        - Small Screen: ${screenSize} (${window.innerWidth}px)
+        - Final Mobile Mode: ${isMobile ? '📱 MOBILE (50 FPS)' : '🖥️ DESKTOP (60 FPS)'}
+        - Window Size: ${window.innerWidth}x${window.innerHeight}`);
+    }
+  }, [isMobile]);
 
   // Collision detection
   const checkCollision = useCallback(
@@ -949,11 +970,9 @@ export const useGameState = () => {
         return;
       }
 
-      // Adaptive FPS limiting for mobile performance
+      // Adaptive FPS limiting for mobile performance - consistent with mobile detection
       const deltaTime = currentTime - lastTimeRef.current;
-      const targetFPS = typeof window !== 'undefined' && 
-        (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) 
-        ? 45 : 60; // 45 FPS on mobile, 60 FPS on desktop
+      const targetFPS = isMobile ? 50 : 60; // 50 FPS on mobile (improved from 45), 60 FPS on desktop
       const frameTime = 1000 / targetFPS;
       
       if (deltaTime < frameTime) {
@@ -986,13 +1005,15 @@ export const useGameState = () => {
           .slice(0, 30); // Limit bullets to 30 for 60fps performance
 
         // Update enemy bullets - Optimized with bullet limit
+        // Mobile-optimized enemy bullet limit to prevent performance issues
+        const maxEnemyBullets = isMobile ? 12 : 20; // Reduced limit for mobile
         newState.enemyBullets = newState.enemyBullets
           .map((bullet) => ({
             ...bullet,
             y: bullet.y + bullet.speed * timeSlowBulletFactor,
           }))
           .filter((bullet) => bullet.y < GAME_CONFIG.CANVAS_HEIGHT)
-          .slice(0, 20); // Limit enemy bullets to 20 for 60fps performance
+          .slice(0, maxEnemyBullets); // Mobile-optimized bullet limit
 
         // Update enemies - Optimized with enemy limit
         newState.enemies = newState.enemies
@@ -1011,13 +1032,22 @@ export const useGameState = () => {
               0.75, // Don't go below 75% of base fire rate
               1 - (gameState.level - 1) * 0.008 // Much gentler scaling: 0.8% per level
             );
+            
+            // Mobile-specific fire rate optimization to prevent bullet spam
+            const baseMobileMultiplier = isMobile ? 2.5 : 1; // 2.5x slower on mobile
+            const mobileMinFireRate = isMobile ? 1500 : 800; // Much higher minimum for mobile (1.5s vs 0.8s)
+            
             const effectiveEnemyFireRate = Math.max(
-              800, // Much higher minimum fire rate (was 300ms, now 800ms)
-              Math.floor(enemyConfig.fireRate * levelFireModifier)
+              mobileMinFireRate,
+              Math.floor(enemyConfig.fireRate * levelFireModifier * baseMobileMultiplier)
             );
+            
+            // Extra mobile protection: ensure minimum time gap
+            const timeSinceLastShot = now - (enemy.lastShot || 0);
+            const mobileExtraDelay = isMobile ? 500 : 0; // Additional 500ms delay on mobile
             if (
               enemyConfig.canShoot &&
-              now - enemy.lastShot > effectiveEnemyFireRate
+              timeSinceLastShot > effectiveEnemyFireRate + mobileExtraDelay
             ) {
               if (enemy.type === "shooter") {
                 // Shooter: single precise shot
@@ -1066,6 +1096,11 @@ export const useGameState = () => {
               }
 
               enemy.lastShot = now;
+              
+              // Debug log for mobile bullet spam tracking
+              if (isMobile) {
+                console.log(`📱 Mobile Enemy ${enemy.type} fired: rate=${effectiveEnemyFireRate}ms, extra delay=${mobileExtraDelay}ms, gap=${timeSinceLastShot}ms`);
+              }
             }
 
             return updatedEnemy;
@@ -1280,6 +1315,9 @@ export const useGameState = () => {
           // Balanced firing system - much slower and more strategic
           const baseFireRate = boss.fireRate;
           let phaseFireModifier = 1.0; // Default: normal speed
+          
+          // Mobile-specific boss fire rate optimization to prevent bullet spam
+          const mobileBossMultiplier = isMobile ? 1.8 : 1; // 1.8x slower on mobile
 
           // Dynamic firing modes based on level and randomness
           let firingMode = "normal";
@@ -1312,7 +1350,7 @@ export const useGameState = () => {
 
           let canFire = false;
           const bossFireRate =
-            baseFireRate * phaseFireModifier * (timeSlowActive ? 1.2 : 1);
+            baseFireRate * phaseFireModifier * (timeSlowActive ? 1.2 : 1) * mobileBossMultiplier;
 
           // Ensure lastShot is initialized for immediate firing
           if (!boss.lastShot || boss.lastShot > now - 200) {
@@ -1410,7 +1448,7 @@ export const useGameState = () => {
 
           if (canFire) {
             console.log(
-              `🔥 Boss ${boss.type} firing! Base fireRate: ${boss.fireRate}, Phase: ${boss.ai.currentPhase}, Final rate: ${bossFireRate}ms`
+              `🔥 Boss ${boss.type} firing! Base fireRate: ${boss.fireRate}, Phase: ${boss.ai.currentPhase}, Final rate: ${bossFireRate}ms${isMobile ? ' (Mobile optimized: ' + mobileBossMultiplier + 'x)' : ''}`
             );
             const centerX = boss.x + boss.width / 2;
             const centerY = boss.y + boss.height + 10; // Reduced spacing for better positioning
@@ -2430,6 +2468,7 @@ export const useGameState = () => {
       gameState.powerUps,
       gameState.combo,
       gameState.screenShake,
+      isMobile,
       checkCollision,
       createEnhancedExplosion,
       spawnEnemy,
