@@ -79,21 +79,24 @@ export const useGameState = () => {
   // Mobile detection for optimized firing rates and performance
   const isMobile = typeof window !== 'undefined' && 
     (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-     ('ontouchstart' in window && navigator.maxTouchPoints > 0) || // Better touch detection
-     (window.innerWidth <= 768 && 'ontouchstart' in window)); // Only count small screens with touch support
+     window.innerWidth <= 768); // Mobile based on screen size or user agent
+  
+  // Force mobile mode for testing (uncomment to test mobile features on desktop)
+  // const isMobile = true;
   
   // Debug log for mobile detection (only log once)
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const userAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const touchSupport = 'ontouchstart' in window && navigator.maxTouchPoints > 0;
       const screenSize = window.innerWidth <= 768;
+      
       console.log(`🎮 Game Mode Detection:
         - User Agent Mobile: ${userAgent}
-        - Touch Support: ${touchSupport} (maxTouchPoints: ${navigator.maxTouchPoints || 0})
         - Small Screen: ${screenSize} (${window.innerWidth}px)
-        - Final Mobile Mode: ${isMobile ? '📱 MOBILE (50 FPS)' : '🖥️ DESKTOP (60 FPS)'}
-        - Window Size: ${window.innerWidth}x${window.innerHeight}`);
+        - Final Mobile Mode: ${isMobile ? '📱 MOBILE (30 FPS)' : '🖥️ DESKTOP (60 FPS)'}
+        - Window Size: ${window.innerWidth}x${window.innerHeight}
+        - isMobile Value: ${isMobile}
+        - Enemy Speed Multiplier: ${isMobile ? '6.2x' : '0.4x'}`);
     }
   }, [isMobile]);
 
@@ -558,6 +561,11 @@ export const useGameState = () => {
       }
 
       const enemyConfig = GAME_CONFIG.ENEMY_TYPES[enemyType];
+      const speedMultiplier = isMobile ? 1.5 : 0.4; // Daha dengeli multiplier
+      const levelBonus = Math.min(24, currentState.level - 1);
+      const baseSpeedBonus = isMobile ? 1.5 : 0; // Daha düşük base bonus
+      const finalSpeed = (enemyConfig.speed + baseSpeedBonus) * (1 + levelBonus * speedMultiplier);
+      
       const newEnemy: Enemy = {
         x: Math.max(
           60, // Mobile-friendly: 60px margin from left edge
@@ -567,11 +575,20 @@ export const useGameState = () => {
         y: -GAME_CONFIG.ENEMY_SIZE - 200, // Düşmanları daha uzaktan başlatıyorum (-200 ekstra)
         width: GAME_CONFIG.SHIP_WIDTH,
         height: GAME_CONFIG.SHIP_HEIGHT,
-        speed: enemyConfig.speed + Math.min(24, currentState.level - 1) * (isMobile ? 6.2 : 0.4), // 4x faster enemies on mobile
+        speed: finalSpeed, // Mobile speed calculation
         type: enemyType,
         health: enemyConfig.health,
         lastShot: Date.now(),
       };
+      
+      console.log(`🚀 Enemy Speed Debug:
+        - isMobile: ${isMobile}
+        - Base Speed: ${enemyConfig.speed}
+        - Base Speed Bonus: ${baseSpeedBonus}
+        - Level Bonus: ${levelBonus}
+        - Speed Multiplier: ${speedMultiplier}
+        - Final Speed: ${finalSpeed}
+        - Enemy Type: ${enemyType}`);
 
       setGameObjects((prev) => {
         const newEnemies = [...prev.enemies, newEnemy];
