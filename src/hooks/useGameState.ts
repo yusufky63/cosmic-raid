@@ -74,6 +74,7 @@ export const useGameState = () => {
   const lastTimeRef = useRef<number>(0);
   const lastPlayerShotRef = useRef<number>(0);
   const lastEnemyShotFrameRef = useRef<number>(0); // Prevent frame-based bullet spam
+  const globalEnemyFireLockRef = useRef<boolean>(false); // Global fire lock to prevent multiple enemies firing
   
   // Mobile detection for optimized firing rates and performance
   const isMobile = typeof window !== 'undefined' && 
@@ -938,6 +939,9 @@ export const useGameState = () => {
         return;
       }
       lastTimeRef.current = currentTime;
+      
+      // Reset global fire lock at start of each frame
+      globalEnemyFireLockRef.current = false;
 
       setGameObjects((prev) => {
         const newState = { ...prev };
@@ -962,8 +966,8 @@ export const useGameState = () => {
           .filter((bullet) => bullet.y > -bullet.height)
           .slice(0, isMobile ? 15 : 30); // Limit bullets to 15 on mobile, 30 on desktop
 
-        // Update enemy bullets - Optimized with bullet limit for mobile
-        const maxEnemyBullets = isMobile ? 8 : 15; // Reduced limit on mobile
+        // Update enemy bullets - Ultra strict bullet limit to prevent spam
+        const maxEnemyBullets = isMobile ? 1 : 2; // Ultra strict limit to prevent spam
         newState.enemyBullets = newState.enemyBullets
           .map((bullet) => ({
             ...bullet,
@@ -990,87 +994,66 @@ export const useGameState = () => {
               1 - (gameState.level - 1) * 0.008 // Much gentler scaling: 0.8% per level
             );
             
-            // Balanced fire rate for all platforms - no slowdown for mobile
+            // Much slower fire rate to prevent bullet spam
             const effectiveEnemyFireRate = Math.max(
-              800, // Minimum 800ms for all platforms
-              Math.floor(enemyConfig.fireRate * levelFireModifier)
+              2000, // Minimum 2000ms (2 seconds) for all platforms - much slower
+              Math.floor(enemyConfig.fireRate * levelFireModifier * 2) // Double the fire rate
             );
             
             // Targeted bullet spam prevention (works on all platforms)
             const timeSinceLastShot = now - (enemy.lastShot || 0);
             
             // Prevent rapid-fire spam: ensure minimum gap between shots
-            const minGapBetweenShots = 600; // 600ms minimum gap for ALL platforms
+            const minGapBetweenShots = 1500; // 1500ms (1.5s) minimum gap for ALL platforms - much longer
             const hasMinimumGap = timeSinceLastShot >= minGapBetweenShots;
             
             // Global bullet limit check to prevent screen spam
             const currentBulletCount = newState.enemyBullets.length;
-            const maxBulletsOnScreen = 15; // Maximum bullets allowed on screen
+            const maxBulletsOnScreen = isMobile ? 2 : 3; // Much stricter limit to prevent spam
             const canSpawnBullet = currentBulletCount < maxBulletsOnScreen;
             
             // Frame-based spam prevention: only one enemy can fire per frame
-            const currentFrame = performance.now();
+            const currentFrame = Math.floor(performance.now() / 16); // 16ms frame grouping
             const canFireThisFrame = currentFrame !== lastEnemyShotFrameRef.current;
+            
+            // Global frame-based control: only one enemy can fire per frame globally
+            const globalCanFire = currentFrame !== lastEnemyShotFrameRef.current && !globalEnemyFireLockRef.current;
             
             if (
               enemyConfig.canShoot &&
               timeSinceLastShot > effectiveEnemyFireRate &&
               hasMinimumGap &&
               canSpawnBullet &&
-              canFireThisFrame
+              canFireThisFrame &&
+              globalCanFire
             ) {
-              if (enemy.type === "shooter") {
-                // Shooter: single precise shot
-                const enemyBullet: Bullet = {
-                  x: enemy.x + Math.floor(enemy.width / 2) - 3,
-                  y: enemy.y + enemy.height,
-                  width: 6,
-                  height: 18,
-                  speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 1.05,
-                  direction: "down" as const,
-                };
-                newState.enemyBullets.push(enemyBullet);
-              } else if (enemy.type === "bomber") {
-                // Bomber: Heavy shot
-                const enemyBullet: Bullet = {
-                  x: enemy.x + Math.floor(enemy.width / 2) - 5,
-                  y: enemy.y + enemy.height,
-                  width: 10,
-                  height: 20,
-                  speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 0.7,
-                  direction: "down" as const,
-                };
-                newState.enemyBullets.push(enemyBullet);
-              } else if (enemy.type === "stealth") {
-                // Stealth: Fast shot
-                const enemyBullet: Bullet = {
-                  x: enemy.x + Math.floor(enemy.width / 2) - 2,
-                  y: enemy.y + enemy.height,
-                  width: 4,
-                  height: 12,
-                  speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 1.5,
-                  direction: "down" as const,
-                };
-                newState.enemyBullets.push(enemyBullet);
-              } else if (enemy.type === "assassin") {
-                // Assassin: Precise shot
-                const enemyBullet: Bullet = {
-                  x: enemy.x + Math.floor(enemy.width / 2) - 4,
-                  y: enemy.y + enemy.height,
-                  width: 8,
-                  height: 16,
-                  speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 1.2,
-                  direction: "down" as const,
-                };
-                newState.enemyBullets.push(enemyBullet);
-              }
+            // ALL ENEMY TYPES: Single bullet only (like player ship)
+            const enemyBullet: Bullet = {
+              x: enemy.x + Math.floor(enemy.width / 2) - 3,
+              y: enemy.y + enemy.height,
+              width: 6,
+              height: 18,
+              speed: GAME_CONFIG.ENEMY_BULLET_SPEED * 1.0,
+              direction: "down" as const,
+            };
+            newState.enemyBullets.push(enemyBullet);
 
-              enemy.lastShot = now;
-              lastEnemyShotFrameRef.current = currentFrame; // Update frame tracking
-              
-              // Debug log for bullet spam prevention
-              console.log(`🎯 Enemy ${enemy.type} fired: rate=${effectiveEnemyFireRate}ms, gap=${timeSinceLastShot}ms, bullets on screen: ${currentBulletCount}/${maxBulletsOnScreen}, frame: ${Math.floor(currentFrame)}`);
+            enemy.lastShot = now;
+            lastEnemyShotFrameRef.current = currentFrame; // Update frame tracking - GLOBAL LOCK
+            globalEnemyFireLockRef.current = true; // Lock all other enemies from firing this frame
+            
+            // Additional safety: prevent multiple bullets in same frame
+            if (newState.enemyBullets.length > 0) {
+              const lastBullet = newState.enemyBullets[newState.enemyBullets.length - 1];
+              if (lastBullet && Math.abs(lastBullet.y - enemy.y) < 5) {
+                // If last bullet is too close, don't spawn another
+                return updatedEnemy;
+              }
             }
+            
+            // Debug log for bullet spam prevention
+            console.log(`🎯 Enemy ${enemy.type} fired: rate=${effectiveEnemyFireRate}ms, gap=${timeSinceLastShot}ms, bullets on screen: ${currentBulletCount}/${maxBulletsOnScreen}, frame: ${Math.floor(currentFrame)}`);
+          }
 
             return updatedEnemy;
           })
