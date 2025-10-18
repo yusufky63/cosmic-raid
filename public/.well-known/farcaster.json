@@ -1,8 +1,8 @@
 {
   "accountAssociation": {
-    "header": "",
-    "payload": "",
-    "signature": ""
+    "header": "eyJmaWQiOjg2NDc5MywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweENjZTJFMjI5NzNmMUY1MTA5MjQzQTZiNkREZTdBNDk4QzlENjYzNjYifQ",
+    "payload": "eyJkb21haW4iOiJjb3NtaWMtcmFpZC52ZXJjZWwuYXBwIn0",
+    "signature": "88TDCa2jAeFFnLMTOifkD/dIwWAsIC3c0sQwYEDbNilDn6SCvGkYWQI/kE6YmooRTutyTro54s5CdFwa6BhCQhs="
   },
   "baseBuilder": {
     "allowedAddresses": ["0xc0F52851fCAac0cac016432E5e11954632cd2fcB"]
@@ -17,14 +17,12 @@
     "webhookUrl": "https://cosmic-raid.vercel.app/api/webhook",
     "subtitle": "Epic Space Combat",
     "description": "Defend the galaxy! Battle bosses with progressive ship upgrades.",
-    "screenshotUrls": [
-      "https://cosmic-raid.vercel.app/og-image.png"
-    ],
+    "screenshotUrls": ["https://cosmic-raid.vercel.app/og-image.png"],
     "primaryCategory": "games",
     "tags": ["space", "shooter", "arcade"],
     "heroImageUrl": "https://cosmic-raid.vercel.app/og-image.png",
     "tagline": "Defend the galaxy!",
-    "ogTitle": "Cosmic Raid - Epic Space Shooter",
+    "ogTitle": "Cosmic Raid",
     "ogDescription": "Epic space shooter with boss battles and ship upgrades!",
     "ogImageUrl": "https://cosmic-raid.vercel.app/og-image.png",
     "requiredCapabilities": [
@@ -33,5 +31,3 @@
     ]
   }
 }
-
-
