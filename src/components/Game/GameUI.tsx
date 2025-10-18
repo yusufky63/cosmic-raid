@@ -160,92 +160,43 @@ Think you can beat my score? 🎯`;
   if (gameState.gameOver) {
     return (
       <div id="end-screen" className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 50 }}>
-        <div className="max-w-md w-[92%] mx-auto text-center rounded-2xl border border-blue-500/30 bg-black/60 backdrop-blur-xl p-8"
-             style={{
-               background: 'linear-gradient(135deg, rgba(0,0,0,0.9), rgba(10,10,30,0.8))',
-               boxShadow: '0 0 40px rgba(255,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
-             }}>
-          <h2 className="text-3xl font-bold tracking-wide mb-2 font-orbitron text-white"
-              style={{
-                background: 'linear-gradient(135deg, #ff4444, #ff8888)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>
+        <div className="max-w-md w-[92%] mx-auto text-center rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl p-8">
+          <h2 className="text-3xl font-bold tracking-wide mb-2 font-orbitron text-white">
             MISSION FAILED
           </h2>
           <p className="text-white/70 text-sm my-4">Well fought, pilot. The galaxy remembers your sacrifice.</p>
 
           <div className="mb-6 grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 rounded-xl p-4 border border-yellow-400/20 backdrop-blur-sm">
-              <div className="text-[10px] uppercase text-yellow-200/60 tracking-widest mb-1">Final Score</div>
-              <div className="text-2xl font-mono text-yellow-400 font-bold">{gameState.score.toLocaleString()}</div>
+            <div className="rounded-lg border border-white/10 py-3">
+              <div className="text-[10px] uppercase text-white/60 tracking-widest mb-1">Final Score</div>
+              <div className="text-2xl font-mono text-white font-bold">{gameState.score.toLocaleString()}</div>
             </div>
-            <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-xl p-4 border border-blue-400/20 backdrop-blur-sm">
-              <div className="text-[10px] uppercase text-blue-200/60 tracking-widest mb-1">Level Reached</div>
-              <div className="text-2xl font-mono text-blue-400 font-bold">{gameState.level}</div>
+            <div className="rounded-lg border border-white/10 py-3">
+              <div className="text-[10px] uppercase text-white/60 tracking-widest mb-1">Level Reached</div>
+              <div className="text-2xl font-mono text-white font-bold">{gameState.level}</div>
             </div>
           </div>
 
           <div className="space-y-3">
             <button
               onClick={handleShareScore}
-              className="w-full py-3 px-6 font-bold text-white font-orbitron rounded-lg transition-all duration-200 text-sm"
-              style={{
-                background: 'linear-gradient(135deg, #00bfff, #0080ff)',
-                border: '1px solid rgba(0,191,255,0.3)',
-                boxShadow: '0 0 20px rgba(0,191,255,0.2)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 0 30px rgba(0,191,255,0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 0 20px rgba(0,191,255,0.2)';
-              }}
+              className="w-full py-3 px-6 font-bold text-white font-orbitron rounded-lg bg-indigo-600 hover:bg-indigo-500 transition-all duration-200 text-sm"
             >
-              📡 SHARE SCORE
+              SHARE SCORE
             </button>
 
             <button
               onClick={onRestartGame}
-              className="w-full py-3 px-6 font-bold text-white font-orbitron rounded-lg transition-all duration-200 text-sm"
-              style={{
-                background: 'linear-gradient(135deg, #ffd700, #ff8c00)',
-                border: '1px solid rgba(255,215,0,0.3)',
-                boxShadow: '0 0 20px rgba(255,215,0,0.2)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 0 30px rgba(255,215,0,0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 0 20px rgba(255,215,0,0.2)';
-              }}
+              className="w-full py-3 px-6 font-bold text-white font-orbitron rounded-lg bg-indigo-600 hover:bg-indigo-500 transition-all duration-200 text-sm"
             >
-              🔄 PLAY AGAIN
+              PLAY AGAIN
             </button>
 
             <button
               onClick={onBackToMenu}
-              className="w-full py-3 px-6 font-bold text-white/80 font-orbitron rounded-lg transition-all duration-200 text-sm"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
-                border: '1px solid rgba(255,255,255,0.2)',
-                boxShadow: '0 0 10px rgba(255,255,255,0.1)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08))';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))';
-              }}
+              className="w-full py-3 px-6 font-bold text-white font-orbitron rounded-lg bg-white/10 hover:bg-white/15 transition-all duration-200 text-sm"
             >
-              🏠 BACK TO BASE
+              BACK TO MENU
             </button>
           </div>
         </div>

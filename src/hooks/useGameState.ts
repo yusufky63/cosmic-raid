@@ -498,7 +498,7 @@ export const useGameState = () => {
     gameState.playerShotTier,
   ]);
 
-  // Spawn enemy - eski oyunun mantÄ±ÄŸÄ±
+  // Spawn enemy - eski oyunun 
   const spawnEnemy = useCallback(() => {
     // Current state'i al
     setGameState((currentState) => {
