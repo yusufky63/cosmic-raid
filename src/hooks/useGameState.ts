@@ -74,6 +74,7 @@ export const useGameState = () => {
   const waveSpawnRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   const lastPlayerShotRef = useRef<number>(0);
+  const lastEnemyShotFrameRef = useRef<number>(0); // Prevent frame-based bullet spam
   
   // Mobile detection for optimized firing rates and performance
   const isMobile = typeof window !== 'undefined' && 
@@ -1005,15 +1006,15 @@ export const useGameState = () => {
           .slice(0, 30); // Limit bullets to 30 for 60fps performance
 
         // Update enemy bullets - Optimized with bullet limit
-        // Mobile-optimized enemy bullet limit to prevent performance issues
-        const maxEnemyBullets = isMobile ? 12 : 20; // Reduced limit for mobile
+        // Balanced enemy bullet limit for all platforms
+        const maxEnemyBullets = 15; // Same limit for all platforms to prevent spam
         newState.enemyBullets = newState.enemyBullets
           .map((bullet) => ({
             ...bullet,
             y: bullet.y + bullet.speed * timeSlowBulletFactor,
           }))
           .filter((bullet) => bullet.y < GAME_CONFIG.CANVAS_HEIGHT)
-          .slice(0, maxEnemyBullets); // Mobile-optimized bullet limit
+          .slice(0, maxEnemyBullets); // Consistent bullet limit
 
         // Update enemies - Optimized with enemy limit
         newState.enemies = newState.enemies
@@ -1033,21 +1034,34 @@ export const useGameState = () => {
               1 - (gameState.level - 1) * 0.008 // Much gentler scaling: 0.8% per level
             );
             
-            // Mobile-specific fire rate optimization to prevent bullet spam
-            const baseMobileMultiplier = isMobile ? 2.5 : 1; // 2.5x slower on mobile
-            const mobileMinFireRate = isMobile ? 1500 : 800; // Much higher minimum for mobile (1.5s vs 0.8s)
-            
+            // Balanced fire rate for all platforms - no slowdown for mobile
             const effectiveEnemyFireRate = Math.max(
-              mobileMinFireRate,
-              Math.floor(enemyConfig.fireRate * levelFireModifier * baseMobileMultiplier)
+              800, // Minimum 800ms for all platforms
+              Math.floor(enemyConfig.fireRate * levelFireModifier)
             );
             
-            // Extra mobile protection: ensure minimum time gap
+            // Targeted bullet spam prevention (works on all platforms)
             const timeSinceLastShot = now - (enemy.lastShot || 0);
-            const mobileExtraDelay = isMobile ? 500 : 0; // Additional 500ms delay on mobile
+            
+            // Prevent rapid-fire spam: ensure minimum gap between shots
+            const minGapBetweenShots = 600; // 600ms minimum gap for ALL platforms
+            const hasMinimumGap = timeSinceLastShot >= minGapBetweenShots;
+            
+            // Global bullet limit check to prevent screen spam
+            const currentBulletCount = newState.enemyBullets.length;
+            const maxBulletsOnScreen = 15; // Maximum bullets allowed on screen
+            const canSpawnBullet = currentBulletCount < maxBulletsOnScreen;
+            
+            // Frame-based spam prevention: only one enemy can fire per frame
+            const currentFrame = performance.now();
+            const canFireThisFrame = currentFrame !== lastEnemyShotFrameRef.current;
+            
             if (
               enemyConfig.canShoot &&
-              timeSinceLastShot > effectiveEnemyFireRate + mobileExtraDelay
+              timeSinceLastShot > effectiveEnemyFireRate &&
+              hasMinimumGap &&
+              canSpawnBullet &&
+              canFireThisFrame
             ) {
               if (enemy.type === "shooter") {
                 // Shooter: single precise shot
@@ -1096,11 +1110,10 @@ export const useGameState = () => {
               }
 
               enemy.lastShot = now;
+              lastEnemyShotFrameRef.current = currentFrame; // Update frame tracking
               
-              // Debug log for mobile bullet spam tracking
-              if (isMobile) {
-                console.log(`📱 Mobile Enemy ${enemy.type} fired: rate=${effectiveEnemyFireRate}ms, extra delay=${mobileExtraDelay}ms, gap=${timeSinceLastShot}ms`);
-              }
+              // Debug log for bullet spam prevention
+              console.log(`🎯 Enemy ${enemy.type} fired: rate=${effectiveEnemyFireRate}ms, gap=${timeSinceLastShot}ms, bullets on screen: ${currentBulletCount}/${maxBulletsOnScreen}, frame: ${Math.floor(currentFrame)}`);
             }
 
             return updatedEnemy;
@@ -1316,8 +1329,8 @@ export const useGameState = () => {
           const baseFireRate = boss.fireRate;
           let phaseFireModifier = 1.0; // Default: normal speed
           
-          // Mobile-specific boss fire rate optimization to prevent bullet spam
-          const mobileBossMultiplier = isMobile ? 1.8 : 1; // 1.8x slower on mobile
+          // Balanced boss fire rate for all platforms
+          const bossSpamPrevention = 1.2; // 20% slower to prevent spam on all platforms
 
           // Dynamic firing modes based on level and randomness
           let firingMode = "normal";
@@ -1350,7 +1363,7 @@ export const useGameState = () => {
 
           let canFire = false;
           const bossFireRate =
-            baseFireRate * phaseFireModifier * (timeSlowActive ? 1.2 : 1) * mobileBossMultiplier;
+            baseFireRate * phaseFireModifier * (timeSlowActive ? 1.2 : 1) * bossSpamPrevention;
 
           // Ensure lastShot is initialized for immediate firing
           if (!boss.lastShot || boss.lastShot > now - 200) {
@@ -1448,7 +1461,7 @@ export const useGameState = () => {
 
           if (canFire) {
             console.log(
-              `🔥 Boss ${boss.type} firing! Base fireRate: ${boss.fireRate}, Phase: ${boss.ai.currentPhase}, Final rate: ${bossFireRate}ms${isMobile ? ' (Mobile optimized: ' + mobileBossMultiplier + 'x)' : ''}`
+              `🔥 Boss ${boss.type} firing! Base fireRate: ${boss.fireRate}, Phase: ${boss.ai.currentPhase}, Final rate: ${bossFireRate}ms (Spam prevention: ${bossSpamPrevention}x)`
             );
             const centerX = boss.x + boss.width / 2;
             const centerY = boss.y + boss.height + 10; // Reduced spacing for better positioning
@@ -2520,6 +2533,7 @@ export const useGameState = () => {
       // Reset references
       lastTimeRef.current = 0;
       lastPlayerShotRef.current = 0;
+      lastEnemyShotFrameRef.current = 0;
     };
   }, []);
 
@@ -2550,6 +2564,7 @@ export const useGameState = () => {
 
     lastPlayerShotRef.current = 0;
     lastTimeRef.current = 0;
+    lastEnemyShotFrameRef.current = 0;
   }, []);
 
   return {
