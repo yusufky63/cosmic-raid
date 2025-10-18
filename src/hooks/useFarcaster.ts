@@ -22,9 +22,8 @@ export const useFarcaster = () => {
         setIsInMiniApp(inMiniApp);
 
         if (inMiniApp) {
-          const context = await sdk.context;
-          const miniAppUser = (context?.user ?? undefined) as MiniAppUser | undefined;
-          setUser(miniAppUser);
+          const context = (sdk as { context?: { user?: MiniAppUser } }).context;
+          setUser(context?.user);
           await sdk.actions.ready();
         }
       } catch (err) {
