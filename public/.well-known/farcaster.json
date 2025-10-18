@@ -1,0 +1,37 @@
+{
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "baseBuilder": {
+    "allowedAddresses": ["0xc0F52851fCAac0cac016432E5e11954632cd2fcB"]
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "Cosmic Raid",
+    "homeUrl": "https://cosmic-raid.vercel.app",
+    "iconUrl": "https://cosmic-raid.vercel.app/icon.png",
+    "splashImageUrl": "https://cosmic-raid.vercel.app/splash.png",
+    "splashBackgroundColor": "#000000",
+    "webhookUrl": "https://cosmic-raid.vercel.app/api/webhook",
+    "subtitle": "Epic Space Combat",
+    "description": "Defend the galaxy! Battle bosses with progressive ship upgrades.",
+    "screenshotUrls": [
+      "https://cosmic-raid.vercel.app/og-image.png"
+    ],
+    "primaryCategory": "games",
+    "tags": ["space", "shooter", "arcade"],
+    "heroImageUrl": "https://cosmic-raid.vercel.app/og-image.png",
+    "tagline": "Defend the galaxy!",
+    "ogTitle": "Cosmic Raid - Epic Space Shooter",
+    "ogDescription": "Epic space shooter with boss battles and ship upgrades!",
+    "ogImageUrl": "https://cosmic-raid.vercel.app/og-image.png",
+    "requiredCapabilities": [
+      "wallet.getEthereumProvider",
+      "actions.composeCast"
+    ]
+  }
+}
+
+
