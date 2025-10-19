@@ -175,6 +175,8 @@ export interface GameState {
   combo: ComboSystem;
   // Screen shake when player takes damage
   screenShake: number; // Duration in ms, decreases over time
+  // Statistics for blockchain submission
+  gameStartTime: number; // When the game started
 }
 
 export const GAME_CONFIG = {
@@ -241,9 +243,9 @@ export const GAME_CONFIG = {
     basic: { speed: 1.4, health: 1, canShoot: false, fireRate: 0 },
     shooter: { speed: 1.8, health: 2, canShoot: true, fireRate: 2200 }, // Slower: 1400 -> 2200ms
     kamikaze: { speed: 3.2, health: 1, canShoot: false, fireRate: 0 },
-    bomber: { speed: 1.0, health: 5, canShoot: true, fireRate: 3500 }, // Slower: 2500 -> 3500ms
-    stealth: { speed: 2.4, health: 1, canShoot: true, fireRate: 1800 }, // Much slower: 1000 -> 1800ms
-    assassin: { speed: 2.2, health: 3, canShoot: true, fireRate: 2000 }, // Slower: 1200 -> 2000ms
+    bomber: { speed: 1.0, health: 4, canShoot: true, fireRate: 3500 }, // Güçlü ama 4 canlı
+    stealth: { speed: 3.4, health: 4, canShoot: true, fireRate: 1800 }, // Much slower: 1000 -> 1800ms
+    assassin: { speed: 3.2, health: 5, canShoot: true, fireRate: 2000 }, // Slower: 1200 -> 2000ms
   } as Record<EnemyType, { speed: number; health: number; canShoot: boolean; fireRate: number }>,
 
   // Bonus points for defeating a boss (avoid per-hit score inflation)

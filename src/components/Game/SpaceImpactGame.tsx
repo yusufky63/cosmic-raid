@@ -65,6 +65,7 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
             onRestartGame={handleRestart}
             onBackToMenu={onBackToMenu}
             onResumeGame={togglePause}
+            gameStartTime={gameState.gameStartTime}
           />
         </div>
       </div>

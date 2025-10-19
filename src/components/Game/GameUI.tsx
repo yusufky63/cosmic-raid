@@ -1,8 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useAccount, useSwitchChain, useChainId, useConnect } from 'wagmi';
+import { base } from 'wagmi/chains';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { GameState, GameObjects } from '@/types/game';
+import { useCosmosRaidContract } from '@/hooks/useCosmosRaidContract';
+import { CosmosRaidGameData } from '@/types/blockchain';
 
 interface GameUIProps {
   gameState: GameState;
@@ -10,6 +14,7 @@ interface GameUIProps {
   onRestartGame: () => void;
   onBackToMenu: () => void;
   onResumeGame?: () => void;
+  gameStartTime?: number; // Track when game started for score submission
 }
 
 export const GameUI: React.FC<GameUIProps> = ({
@@ -18,7 +23,17 @@ export const GameUI: React.FC<GameUIProps> = ({
   onRestartGame,
   onBackToMenu,
   onResumeGame,
+  gameStartTime = Date.now(),
 }) => {
+  const [isSubmittingScore, setIsSubmittingScore] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+  
+  const { address, isConnected } = useAccount();
+  const { submitScore, isPending } = useCosmosRaidContract();
+  const { switchChain } = useSwitchChain();
+  const chainId = useChainId();
+  const { connectors, connect } = useConnect();
 
   // Combo display HUD
   const comboHud = (() => {
@@ -156,33 +171,240 @@ Think you can beat my score? 🎯`;
     }
   };
 
-  // Game over screen - enhanced with share functionality
-  if (gameState.gameOver) {
+  // Handle save score function
+  const handleSaveScore = async () => {
+    // Check wallet connection
+    if (!isConnected || !address) {
+      // Don't set error, user should click connect wallet button instead
+      return;
+    }
+
+    // Check if on Base network
+    if (chainId !== base.id) {
+      try {
+        await switchChain({ chainId: base.id });
+      } catch (switchError) {
+        console.error('Network switch error:', switchError);
+        setErrorMessage('Please switch to Base network to save your score');
+        setSubmitStatus('error');
+        return;
+      }
+    }
+
+    setIsSubmittingScore(true);
+    setSubmitStatus('idle');
+    setErrorMessage('');
+
+    try {
+      const gameTimeSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
+      
+      const gameDataForContract: CosmosRaidGameData = {
+        score: gameState.score,
+        level: gameState.level,
+        time: gameTimeSeconds, // No time cap - play as long as you want!
+        lives: 0, // Game is over, so 0 lives
+        playerAddress: address
+      };
+
+      console.log('Submitting score to blockchain:', gameDataForContract);
+      console.log('Validation check:', {
+        score: `${gameState.score} (max: 10000000)`,
+        level: `${gameState.level} (max: 50)`,
+        time: `${gameTimeSeconds} (no limit - infinity!)`,
+        lives: '0 (valid)',
+        playerAddress: `${address} (length: ${address?.length})`
+      });
+
+      await submitScore(gameDataForContract);
+      
+      setSubmitStatus('success');
+      console.log('Score submitted successfully!');
+      
+    } catch (error) {
+      console.error('Error saving score:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to save score');
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmittingScore(false);
+    }
+  };
+
+      // Game over screen - modern design
+      if (gameState.gameOver) {
+        return (
+          <div id="end-screen" className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 50 }}>
+            <div className="max-w-lg w-[90%] mx-auto text-center rounded-xl bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-2xl border border-gray-700/50 shadow-2xl p-6">
+              {/* Header */}
+              <div className="mb-4">
+             
+                <h2 className="text-xl font-semibold text-white mb-1">Mission Failed</h2>
+                <p className="text-gray-400 text-sm">Better luck next time, pilot</p>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="mb-5 grid grid-cols-2 gap-3">
+                <div className="bg-white/5 rounded-lg border border-white/10 py-3 px-2">
+                  <div className="text-xs text-gray-400 mb-1">Score</div>
+                  <div className="text-lg font-bold text-white">{gameState.score.toLocaleString()}</div>
+                </div>
+                <div className="bg-white/5 rounded-lg border border-white/10 py-3 px-2">
+                  <div className="text-xs text-gray-400 mb-1">Level</div>
+                  <div className="text-lg font-bold text-white">{gameState.level}</div>
+                </div>
+              </div>
+
+          {/* Status Messages */}
+          {submitStatus === 'success' && (
+            <div className="mb-4 p-3 bg-green-500/20 text-green-400 rounded-lg border border-green-500/30 text-xs sm:text-sm">
+              ✅ Score saved to blockchain successfully!
+            </div>
+          )}
+
+          {submitStatus === 'error' && errorMessage && (
+            <div className="mb-4 p-3 bg-red-500/20 text-red-400 rounded-lg border border-red-500/30 text-xs sm:text-sm">
+              ❌ {errorMessage}
+            </div>
+          )}
+
+          {!isConnected && (
+            <button
+              onClick={() => connect({ connector: connectors[0] })}
+              className="w-full mb-4 py-3 px-6 font-bold text-white font-orbitron rounded-lg bg-blue-600 hover:bg-blue-500 transition-all duration-200 text-sm"
+            >
+              🔗 CONNECT WALLET TO SAVE SCORE
+            </button>
+          )}
+
+          {isConnected && chainId !== base.id && (
+            <button
+              onClick={() => switchChain({ chainId: base.id })}
+              className="w-full mb-4 py-3 px-6 font-bold text-white font-orbitron rounded-lg bg-orange-600 hover:bg-orange-500 transition-all duration-200 text-sm"
+            >
+              🔗 SWITCH TO BASE NETWORK
+            </button>
+          )}
+
+          <div className="space-y-3">
+            {/* Save to Blockchain Button */}
+            {submitStatus !== 'success' && (
+              <button
+                onClick={handleSaveScore}
+                disabled={isSubmittingScore || isPending}
+                className={`w-full py-3 px-6 font-bold font-orbitron rounded-lg transition-all duration-200 text-xs sm:text-sm ${
+                  isSubmittingScore || isPending
+                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                    : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                }`}
+              >
+                {isSubmittingScore || isPending ? '💾 SAVING...' : ' SAVE TO LEADERBOARD'}
+              </button>
+            )}
+
+            <button
+              onClick={handleShareScore}
+              className="w-full py-3 px-6 font-bold  text-xs sm:text-sm text-white font-orbitron rounded-lg bg-indigo-600 hover:bg-indigo-500 transition-all duration-200"
+            >
+              SHARE SCORE
+            </button>
+
+            <button
+              onClick={onRestartGame}
+              className="w-full py-3 px-6 font-bold text-xs sm:text-sm text-white font-orbitron rounded-lg bg-indigo-600 hover:bg-indigo-500 transition-all duration-200"
+            >
+              PLAY AGAIN
+            </button>
+
+            <button
+              onClick={onBackToMenu}
+              className="w-full py-3 px-6 font-bold text-xs sm:text-sm text-white font-orbitron rounded-lg bg-white/10 hover:bg-white/15 transition-all duration-200"
+            >
+              BACK TO MENU
+            </button>
+          </div>
+
+          {/* Free to play notice */}
+         
+        </div>
+      </div>
+    );
+  }
+
+  // Game completed screen - modern design
+  if (gameState.gameCompleted) {
     return (
       <div id="end-screen" className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 50 }}>
-        <div className="max-w-md w-[92%] mx-auto text-center rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl p-8">
-          <h2 className="text-3xl font-bold tracking-wide mb-2 font-orbitron text-white">
-            MISSION FAILED
-          </h2>
-          <p className="text-white/70 text-sm my-4">Well fought, pilot. The galaxy remembers your sacrifice.</p>
+        <div className="max-w-sm w-[90%] mx-auto text-center rounded-xl bg-gradient-to-b from-yellow-900/95 to-black/95 backdrop-blur-2xl border border-yellow-600/50 shadow-2xl p-6">
+          {/* Header */}
+          <div className="mb-4">
+           
+            <h2 className="text-xl font-semibold text-yellow-400 mb-1">Victory!</h2>
+            <p className="text-yellow-200/70 text-sm">Galaxy defended successfully!</p>
+          </div>
 
-          <div className="mb-6 grid grid-cols-2 gap-3">
-            <div className="rounded-lg border border-white/10 py-3">
-              <div className="text-[10px] uppercase text-white/60 tracking-widest mb-1">Final Score</div>
-              <div className="text-2xl font-mono text-white font-bold">{gameState.score.toLocaleString()}</div>
+          {/* Stats Grid */}
+          <div className="mb-5 grid grid-cols-2 gap-3">
+            <div className="bg-yellow-500/10 rounded-lg border border-yellow-400/20 py-3 px-2">
+              <div className="text-xs text-yellow-300 mb-1">Final Score</div>
+              <div className="text-lg font-bold text-yellow-400">{gameState.score.toLocaleString()}</div>
             </div>
-            <div className="rounded-lg border border-white/10 py-3">
-              <div className="text-[10px] uppercase text-white/60 tracking-widest mb-1">Level Reached</div>
-              <div className="text-2xl font-mono text-white font-bold">{gameState.level}</div>
+            <div className="bg-yellow-500/10 rounded-lg border border-yellow-400/20 py-3 px-2">
+              <div className="text-xs text-yellow-300 mb-1">Level</div>
+              <div className="text-lg font-bold text-yellow-400">{gameState.level}</div>
             </div>
           </div>
 
+          {/* Status Messages */}
+          {submitStatus === 'success' && (
+            <div className="mb-4 p-3 bg-green-500/20 text-green-400 rounded-lg border border-green-500/30 text-sm">
+              ✅ Score saved to blockchain successfully!
+            </div>
+          )}
+
+          {submitStatus === 'error' && errorMessage && (
+            <div className="mb-4 p-3 bg-red-500/20 text-red-400 rounded-lg border border-red-500/30 text-sm">
+              ❌ {errorMessage}
+            </div>
+          )}
+
+          {!isConnected && (
+            <button
+              onClick={() => connect({ connector: connectors[0] })}
+              className="w-full mb-4 py-3 px-6 font-bold text-white font-orbitron rounded-lg bg-blue-600 hover:bg-blue-500 transition-all duration-200 text-sm"
+            >
+              🔗 CONNECT WALLET TO SAVE SCORE
+            </button>
+          )}
+
+          {isConnected && chainId !== base.id && (
+            <button
+              onClick={() => switchChain({ chainId: base.id })}
+              className="w-full mb-4 py-3 px-6 font-bold text-white font-orbitron rounded-lg bg-orange-600 hover:bg-orange-500 transition-all duration-200 text-sm"
+            >
+              🔗 SWITCH TO BASE NETWORK
+            </button>
+          )}
+
           <div className="space-y-3">
+            {/* Save to Blockchain Button */}
+            {submitStatus !== 'success' && (
+              <button
+                onClick={handleSaveScore}
+                disabled={isSubmittingScore || isPending}
+                className={`w-full py-3 px-6 font-bold font-orbitron rounded-lg transition-all duration-200 text-sm ${
+                  isSubmittingScore || isPending
+                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                    : 'bg-yellow-400 hover:bg-yellow-300 text-black'
+                }`}
+              >
+                {isSubmittingScore || isPending ? '💾 SAVING...' : '💾 SAVE TO LEADERBOARD'}
+              </button>
+            )}
+
             <button
               onClick={handleShareScore}
               className="w-full py-3 px-6 font-bold text-white font-orbitron rounded-lg bg-indigo-600 hover:bg-indigo-500 transition-all duration-200 text-sm"
             >
-              SHARE SCORE
+              SHARE VICTORY
             </button>
 
             <button
@@ -199,6 +421,9 @@ Think you can beat my score? 🎯`;
               BACK TO MENU
             </button>
           </div>
+
+          {/* Free to play notice */}
+         
         </div>
       </div>
     );

@@ -49,6 +49,7 @@ const initialGameState: GameState = {
     comboEndTime: 0,
   },
   screenShake: 0, // No screen shake initially
+  gameStartTime: Date.now()
 };
 
 const initialGameObjects: GameObjects = {
@@ -86,6 +87,23 @@ export const useGameState = () => {
   const isMobile = typeof window !== 'undefined' && 
     (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
      window.innerWidth <= 768); // Mobile based on screen size or user agent
+
+  // Player güç seviyesine göre düşman dengelemesi
+  const getPlayerPowerLevel = useCallback(() => {
+    const hasDoubleShot = gameState.powerUps?.some((p) => p.type === "doubleShot" && p.active) || false;
+    const hasTripleShot = gameState.powerUps?.some((p) => p.type === "tripleShot" && p.active) || false;
+    const shipConfig = GAME_CONFIG.getShipConfig(gameState.level);
+    const baseShots = shipConfig.shotCount; // 1,2,3,4,5 based on ship upgrade
+    const powerUpBonus = hasTripleShot ? 2 : hasDoubleShot ? 1 : 0;
+    const finalShotCount = Math.min(7, baseShots + powerUpBonus);
+    
+    // Güç seviyesi: 1=basic, 2=double, 3=triple, 4=quad, 5=supreme
+    if (finalShotCount >= 5) return 5; // Supreme
+    if (finalShotCount >= 4) return 4; // Quad
+    if (finalShotCount >= 3) return 3; // Triple
+    if (finalShotCount >= 2) return 2; // Double
+    return 1; // Basic
+  }, [gameState.powerUps, gameState.level]);
 
   // Performance optimization system
   const performanceConfig: PerformanceConfig = {
@@ -513,16 +531,24 @@ export const useGameState = () => {
 
       if (hasLaserBeam) {
         consumeLaserBeam = true;
+        // Laser beam aktifken SADECE laser beam ateşle - diğer mermiler yok
+        console.log("🔥 LASER BEAM EXCLUSIVE FIRE - Normal bullets disabled");
         newBullets.push({
-          x: prev.ship.x + Math.floor(prev.ship.width / 2) - 8,
-          y: prev.ship.y - 20,
-          width: 16,
-          height: 40,
-          speed: bulletSpeed * 0.8, // Yavaşlatıldı: 2.2x -> 0.8x (normal mermiden yavaş)
+          x: prev.ship.x + Math.floor(prev.ship.width / 2) - 20, // Daha geniş: -8 -> -20
+          y: prev.ship.y - 30,
+          width: 40, // Çok daha büyük: 16 -> 40
+          height: 80, // Çok daha uzun: 40 -> 80
+          speed: bulletSpeed * 0.9, // Biraz hızlandırıldı: 0.8x -> 0.9x
           direction: "up" as const,
-          damage: 3, // Damage azaltıldı: 5 -> 3
+          damage: 4, // Damage artırıldı: 3 -> 4
           type: "laser", // Engine-trail efekti için tip eklendi
         });
+        
+        // Laser beam varken normal ateş sistemini DURDUR
+        return {
+          ...prev,
+          bullets: [...prev.bullets, ...newBullets],
+        };
       }
 
       return {
@@ -638,13 +664,13 @@ export const useGameState = () => {
       }
 
       const enemyConfig = GAME_CONFIG.ENEMY_TYPES[enemyType];
-      const speedMultiplier = isMobile ? 0.8 : 0.4; // Çok daha düşük multiplier
+      const speedMultiplier = isMobile ? 1.04 : 0.52; // %30 artırıldı: 0.8->1.04, 0.4->0.52
       const levelBonus = Math.min(24, currentState.level - 1);
       const baseSpeedBonus = isMobile ? 1.0 : 0; // Daha düşük base bonus
       const calculatedSpeed = (enemyConfig.speed + baseSpeedBonus) * (1 + levelBonus * speedMultiplier);
       
-      // Maksimum hız sınırlaması - oyunabilirliği korumak için
-      const maxSpeed = isMobile ? 5 : 4; // Mobil: 8, Desktop: 6 maksimum hız
+      // Maksimum hız sınırlaması - %30 artırıldı
+      const maxSpeed = isMobile ? 6.5 : 5.2; // %30 artış: 5->6.5, 4->5.2
       const finalSpeed = Math.min(calculatedSpeed, maxSpeed);
       
       const newEnemy: Enemy = {
@@ -892,8 +918,12 @@ export const useGameState = () => {
   const startGame = useCallback(() => {
     console.log("Starting game...");
 
-    // Önce state'leri set et
-    setGameState(initialGameState);
+    // Önce state'leri set et - with fresh game start time
+    const gameStartTime = Date.now();
+    setGameState({
+      ...initialGameState,
+      gameStartTime: gameStartTime
+    });
     setGameObjects(initialGameObjects);
 
     // isPlaying'i true yap
@@ -922,17 +952,21 @@ export const useGameState = () => {
 
     // Spawn interval'larını başlat - setTimeout ile gecikme ekle
     setTimeout(() => {
-      console.log("Starting enemy spawn intervals...");
-
-      // Mobile-optimized spawn rate: Ultra fast for better gameplay
-      const spawnInterval = isMobile ? 400 : 1800; // 0.4s on mobile (faster), 1.8s on desktop
+      // Player gücüne göre dinamik spawn rate
+      const playerPower = getPlayerPowerLevel();
+      const powerMultiplier = 1 + (playerPower - 1) * 0.15; // Her güç seviyesi %15 daha hızlı spawn
+      
+      console.log(`🎮 Starting enemy spawn intervals... Player Power: ${playerPower}, Multiplier: ${powerMultiplier.toFixed(2)}x`);
+      const baseSpawnInterval = isMobile ? 280 : 1260; // %30 azaltıldı: 400->280, 1800->1260
+      const spawnInterval = Math.floor(baseSpawnInterval / powerMultiplier);
       enemySpawnRef.current = window.setInterval(() => {
         console.log("Spawn interval triggered");
         spawnEnemy();
       }, spawnInterval);
 
-      // Mobile-optimized wave spawn: Ultra fast for better gameplay
-      const waveInterval = isMobile ? 1000 : 5000; // 1.0s on mobile (faster), 5s on desktop
+      // Player gücüne göre dinamik wave spawn
+      const baseWaveInterval = isMobile ? 700 : 3500; // %30 azaltıldı: 1000->700, 5000->3500
+      const waveInterval = Math.floor(baseWaveInterval / powerMultiplier);
       waveSpawnRef.current = window.setInterval(() => {
         console.log("Wave spawn interval triggered");
         spawnEnemy();
@@ -944,7 +978,7 @@ export const useGameState = () => {
 
       console.log("All spawn intervals started");
     }, 100); // 100ms gecikme
-  }, [spawnEnemy, spawnPowerUp, isMobile]);
+  }, [spawnEnemy, spawnPowerUp, isMobile, getPlayerPowerLevel]);
 
   // Pause/Resume game
   const togglePause = useCallback(() => {
@@ -969,9 +1003,9 @@ export const useGameState = () => {
         // Resume - restart spawning if not in boss fight
         if (!prev.isBossFight) {
           const currentLevel = prev.level;
-          // Mobile-optimized resume spawn rates - Ultra fast for better gameplay
-          const baseSpawnInterval = isMobile ? 300 : 1500;
-          const baseWaveInterval = isMobile ? 800 : 6000;
+          // Mobile-optimized resume spawn rates - %30 daha hızlı
+          const baseSpawnInterval = isMobile ? 210 : 1050; // %30 azaltıldı: 300->210, 1500->1050
+          const baseWaveInterval = isMobile ? 560 : 4200; // %30 azaltıldı: 800->560, 6000->4200
           const newSpawnInterval = Math.max(
             baseSpawnInterval,
             5000 - (currentLevel - 1) * 200
@@ -980,7 +1014,7 @@ export const useGameState = () => {
             baseWaveInterval,
             12000 - (currentLevel - 1) * 500
           );
-          const maxWaveEnemies = isMobile ? 5 : 4; // More enemies per wave on mobile
+          const maxWaveEnemies = isMobile ? 7 : 5; // %30 artış: 5->7, 4->5
           const newWaveEnemyCount = Math.min(
             maxWaveEnemies,
             2 + Math.floor((currentLevel - 1) / 3)
@@ -1101,9 +1135,12 @@ export const useGameState = () => {
         // Truncate array to remove excess bullets
         bullets.length = bulletWriteIndex;
         
-        // Update enemy bullets - Memory-optimized
+        // Update enemy bullets - Memory-optimized with boss consideration
         const enemyBullets = newState.enemyBullets;
-        const maxEnemyBullets = isMobile ? 2 : 4; // Slightly increased for better gameplay
+        const isBossFight = gameState.isBossFight;
+        const maxEnemyBullets = isBossFight 
+          ? (isMobile ? 10 : 20) // Boss savaşında çok daha fazla mermi
+          : (isMobile ? 4 : 8); // Normal düşmanlar için artırıldı
         let enemyBulletWriteIndex = 0;
         
         for (let i = 0; i < enemyBullets.length; i++) {
@@ -1122,7 +1159,12 @@ export const useGameState = () => {
         }
         
         // Truncate array to remove excess bullets
+        const bulletsRemoved = enemyBullets.length - enemyBulletWriteIndex;
         enemyBullets.length = enemyBulletWriteIndex;
+        
+        if (bulletsRemoved > 0) {
+          console.log(`⚠️  ${bulletsRemoved} enemy bullets removed. Remaining: ${enemyBulletWriteIndex}/${maxEnemyBullets}, Boss fight: ${isBossFight}`);
+        }
 
         // Update enemies - Optimized with enemy limit, only move if not paused
         newState.enemies = newState.enemies
@@ -1161,7 +1203,9 @@ export const useGameState = () => {
             
             // Global bullet limit check to prevent screen spam
             const currentBulletCount = newState.enemyBullets.length;
-            const maxBulletsOnScreen = isMobile ? 2 : 3; // Much stricter limit to prevent spam
+            const maxBulletsOnScreen = isBossFight 
+              ? (isMobile ? 10 : 20) // Boss savaşında çok daha fazla mermi
+              : (isMobile ? 6 : 10); // Normal düşmanlar için artırıldı
             const canSpawnBullet = currentBulletCount < maxBulletsOnScreen;
             
             // Frame-based spam prevention: only one enemy can fire per frame
@@ -1432,8 +1476,8 @@ export const useGameState = () => {
           const baseFireRate = boss.fireRate;
           let phaseFireModifier = 1.0; // Default: normal speed
           
-          // Balanced boss fire rate for all platforms
-          const bossSpamPrevention = 1.2; // 20% slower to prevent spam on all platforms
+          // Balanced boss fire rate for all platforms - 20% faster per user request
+          const bossSpamPrevention = 1.0; // Removed spam prevention to increase fire rate by 20%
 
           // Dynamic firing modes based on level and randomness
           let firingMode = "normal";
@@ -1563,8 +1607,11 @@ export const useGameState = () => {
           }
 
           if (canFire) {
+            const maxBossScreenBullets = isBossFight 
+              ? (isMobile ? 10 : 20) // Boss savaşında çok daha fazla mermi
+              : (isMobile ? 6 : 10); // Normal düşmanlar için artırıldı
             console.log(
-              `🔥 Boss ${boss.type} firing! Base fireRate: ${boss.fireRate}, Phase: ${boss.ai.currentPhase}, Final rate: ${bossFireRate}ms (Spam prevention: ${bossSpamPrevention}x)`
+              `🔥 Boss ${boss.type} firing! Base fireRate: ${boss.fireRate}, Phase: ${boss.ai.currentPhase}, Final rate: ${bossFireRate}ms, Max bullets: ${maxBossScreenBullets}`
             );
             const centerX = boss.x + boss.width / 2;
             const centerY = boss.y + boss.height + 10; // Reduced spacing for better positioning
@@ -1631,6 +1678,7 @@ export const useGameState = () => {
                   direction: "down" as const,
                 };
                 newState.enemyBullets.push(bossBullet);
+                console.log(`🌊 Cruiser wave bullet ${i+1}/5 created at (${Math.round(spreadX)}, ${Math.round(centerY)})`);
               });
             } else if (boss.type === "battleship") {
               // Battleship: Heavy cannon barrage
@@ -1751,7 +1799,7 @@ export const useGameState = () => {
 
             boss.lastShot = now;
             console.log(
-              `🚀 Boss bullet created! Total enemy bullets: ${newState.enemyBullets.length}`
+              `🚀 Boss ${boss.type} bullet created! Total enemy bullets: ${newState.enemyBullets.length}, Max allowed: ${maxBossScreenBullets}`
             );
           }
 
@@ -1841,6 +1889,7 @@ export const useGameState = () => {
               }
             } else if (boss.type === "cruiser") {
               // Cruiser: Wave explosion
+              console.log(`🌪️ Cruiser special attack - creating 12 bullets`);
               for (let i = 0; i < 12; i++) {
                 const angle = (i * Math.PI * 2) / 12;
                 const spreadX = centerX + Math.sin(angle) * specialSpread * 0.7;
@@ -1854,6 +1903,7 @@ export const useGameState = () => {
                   damage: 1, // Reduced from 2 to 1 for better balance
                 };
                 newState.enemyBullets.push(specialBullet);
+                if (i < 3) console.log(`🌪️ Special bullet ${i+1}/12 created`);
               }
             } else if (boss.type === "battleship") {
               // Battleship: Triple heavy cannon
@@ -1982,6 +2032,8 @@ export const useGameState = () => {
                 "enemy"
               );
               newState.enemies.splice(i, 1);
+              
+              // Enemy defeated - no specific tracking needed
 
               // Update combo system
               updateCombo(true);
@@ -2021,7 +2073,12 @@ export const useGameState = () => {
                   "boss"
                 );
                 newState.boss = null;
-                setGameState((prev) => ({ ...prev, isBossFight: false }));
+                
+                // Boss defeated
+                setGameState((prev) => ({ 
+                  ...prev, 
+                  isBossFight: false
+                }));
 
                 // Check if this was the final boss (Level 50)
                 setGameState((prev) => {
@@ -2077,9 +2134,9 @@ export const useGameState = () => {
                 // Resume enemy spawning after boss defeat
                 setGameState((prev) => {
                   const newLevel = prev.level;
-                  // Mobile-optimized post-boss spawn rates - Ultra fast for better gameplay
-                  const baseSpawnInterval = isMobile ? 300 : 3000;
-                  const baseWaveInterval = isMobile ? 1000 : 10000;
+                  // Mobile-optimized post-boss spawn rates - %30 daha hızlı
+                  const baseSpawnInterval = isMobile ? 210 : 2100; // %30 azaltıldı: 300->210, 3000->2100
+                  const baseWaveInterval = isMobile ? 700 : 7000; // %30 azaltıldı: 1000->700, 10000->7000
                   const newSpawnInterval = Math.max(
                     baseSpawnInterval,
                     6000 - (newLevel - 1) * 200
@@ -2088,7 +2145,7 @@ export const useGameState = () => {
                     baseWaveInterval,
                     18000 - (newLevel - 1) * 600
                   );
-                  const maxWaveEnemies = isMobile ? 4 : 3; // More enemies per wave on mobile
+                  const maxWaveEnemies = isMobile ? 5 : 4; // %30 artış: 4->5, 3->4
                   const newWaveEnemyCount = Math.min(
                     maxWaveEnemies,
                     2 + Math.floor((newLevel - 1) / 4)
@@ -2372,7 +2429,8 @@ export const useGameState = () => {
                   }, GAME_CONFIG.POWER_UP_DURATION);
                   break;
                 case "laserBeam":
-                  // Laser beam effect - powerful single shot
+                  // Laser beam effect - exclusive powerful beam
+                  const laserDuration = 8000; // 8 saniye - uzun süre laser beam
                   updatedState.powerUps = [
                     ...updatedState.powerUps.filter(
                       (p) => !(p.type === "laserBeam" && p.active)
@@ -2380,8 +2438,8 @@ export const useGameState = () => {
                     {
                       ...powerUp,
                       active: true,
-                      duration: GAME_CONFIG.POWER_UP_DURATION,
-                      endTime: Date.now() + GAME_CONFIG.POWER_UP_DURATION,
+                      duration: laserDuration,
+                      endTime: Date.now() + laserDuration,
                     },
                   ];
                   setTimeout(() => {
@@ -2391,7 +2449,7 @@ export const useGameState = () => {
                         (p) => p.type !== "laserBeam" || !p.active
                       ),
                     }));
-                  }, GAME_CONFIG.POWER_UP_DURATION);
+                  }, laserDuration);
                   break;
                 case "timeSlow":
                   // Time slow effect - slow down enemies
@@ -2541,9 +2599,9 @@ export const useGameState = () => {
               clearInterval(enemySpawnRef.current);
               clearInterval(waveSpawnRef.current);
 
-              // Mobile-optimized level progression spawn rates - Ultra fast for better gameplay
-              const baseSpawnInterval = isMobile ? 300 : 1500; // Ultra fast base on mobile
-              const baseWaveInterval = isMobile ? 800 : 6000; // Ultra fast base on mobile
+              // Mobile-optimized level progression spawn rates - %30 daha hızlı
+              const baseSpawnInterval = isMobile ? 210 : 1050; // %30 azaltıldı: 300->210, 1500->1050
+              const baseWaveInterval = isMobile ? 560 : 4200; // %30 azaltıldı: 800->560, 6000->4200
               const newSpawnInterval = Math.max(
                 baseSpawnInterval,
                 5000 - (newLevel - 1) * 200
@@ -2553,7 +2611,7 @@ export const useGameState = () => {
                 12000 - (newLevel - 1) * 500
               );
               // Mobile-optimized wave enemy count - More enemies for faster gameplay
-              const maxWaveEnemies = isMobile ? 5 : 4; // More enemies per wave on mobile
+              const maxWaveEnemies = isMobile ? 7 : 5; // %30 artış: 5->7, 4->5
               const newWaveEnemyCount = Math.min(
                 maxWaveEnemies,
                 2 + Math.floor((newLevel - 1) / 3)
@@ -2598,6 +2656,7 @@ export const useGameState = () => {
       gameState.powerUps,
       gameState.combo,
       gameState.screenShake,
+      gameState.isBossFight,
       isMobile,
       performanceConfig.maxBullets,
       performanceConfig.targetFPS,

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { SpaceImpactGame } from '@/components/Game/SpaceImpactGame';
 import { GameGuide } from '@/components/Menu/GameGuide';
+import { LeaderboardComponent } from '@/components/Menu/LeaderboardComponent';
 import { useFarcaster } from '@/hooks/useFarcaster';
 import { useWallet } from '@/hooks/useWallet';
 
@@ -159,8 +160,6 @@ export default function Home() {
                 top: `${star.top}%`,
                 width: `${star.width}px`,
                 height: `${star.height}px`,
-                animation: `pulse ${star.duration}s ease-in-out infinite`,
-                animationDelay: `${star.delay}s`,
               }}
             />
           ))}
@@ -174,8 +173,7 @@ export default function Home() {
           fontWeight: 'bold', 
           color: '#ffcc00', 
           marginBottom: '16px', 
-          textShadow: '0 0 20px #ffcc00',
-          animation: 'pulse 2s ease-in-out infinite'
+          textShadow: '0 0 20px #ffcc00'
         }}>
           COSMIC RAID
         </h1>
@@ -412,7 +410,6 @@ export default function Home() {
             transform: 'rotate(-25deg)',
             opacity: 0.6,
             pointerEvents: 'none',
-            animation: 'laser-pulse 2s ease-in-out infinite',
             boxShadow: '0 0 10px #00bfff, 0 0 20px rgba(0, 191, 255, 0.5)'
           }} />
           <div style={{
@@ -425,7 +422,6 @@ export default function Home() {
             transform: 'rotate(35deg)',
             opacity: 0.4,
             pointerEvents: 'none',
-            animation: 'laser-pulse 1.5s ease-in-out infinite reverse',
             boxShadow: '0 0 8px #00bfff, 0 0 16px rgba(0, 191, 255, 0.4)'
           }} />
           <div style={{
@@ -438,49 +434,48 @@ export default function Home() {
             transform: 'rotate(-45deg)',
             opacity: 0.3,
             pointerEvents: 'none',
-            animation: 'laser-pulse 2.5s ease-in-out infinite',
             boxShadow: '0 0 6px #ffd700, 0 0 12px rgba(255, 215, 0, 0.3)'
           }} />
           
           <h1 style={{ 
-            fontSize: 'clamp(3rem, 12vw, 5rem)', 
-            fontWeight: '900', 
+            fontSize: 'clamp(2rem, 8vw, 3.5rem)', 
+            fontWeight: '700', 
             background: 'linear-gradient(135deg, #ffd700, #ffb000, #ff8c00)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
             marginBottom: 'clamp(4px, 1vw, 8px)', 
             fontFamily: '"Orbitron", sans-serif',
-            letterSpacing: 'clamp(3px, 1.5vw, 8px)',
-            textShadow: '0 0 10px rgba(255, 215, 0, 0.4)',
+            letterSpacing: 'clamp(2px, 1vw, 4px)',
+            textShadow: '0 0 8px rgba(255, 215, 0, 0.3)',
             lineHeight: 0.9
           }}>
             COSMIC
           </h1>
           <h1 style={{ 
-            fontSize: 'clamp(3rem, 12vw, 5rem)', 
-            fontWeight: '900', 
+            fontSize: 'clamp(2rem, 8vw, 3.5rem)', 
+            fontWeight: '700', 
             background: 'linear-gradient(135deg, #00bfff, #0080ff, #0040ff)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
-            marginBottom: 'clamp(16px, 3vw, 24px)', 
+            marginBottom: 'clamp(12px, 2vw, 20px)', 
             fontFamily: '"Orbitron", sans-serif',
-            letterSpacing: 'clamp(3px, 1.5vw, 8px)',
-            textShadow: '0 0 10px rgba(0, 191, 255, 0.4)',
+            letterSpacing: 'clamp(2px, 1vw, 4px)',
+            textShadow: '0 0 8px rgba(0, 191, 255, 0.3)',
             lineHeight: 0.9
           }}>
             RAID
           </h1>
           <p style={{ 
             color: '#ffffff', 
-            fontSize: 'clamp(16px, 3.5vw, 22px)', 
+            fontSize: 'clamp(12px, 2.5vw, 16px)', 
             fontWeight: '400',
             fontFamily: '"Orbitron", sans-serif',
-            opacity: 0.95,
-            letterSpacing: '1px',
+            opacity: 0.9,
+            letterSpacing: '0.5px',
             textTransform: 'uppercase',
-            textShadow: '0 0 5px rgba(255, 255, 255, 0.2)'
+            textShadow: '0 0 3px rgba(255, 255, 255, 0.2)'
           }}>
             DEFEND THE GALAXY FROM COSMIC INVADERS!
           </p>
@@ -527,11 +522,11 @@ export default function Home() {
           onClick={() => !assetsLoaded ? null : setCurrentScreen('game')}
           disabled={!assetsLoaded}
           style={{
-            fontSize: 'clamp(18px, 4.5vw, 24px)',
-            fontWeight: '900',
+            fontSize: 'clamp(16px, 3.5vw, 20px)',
+            fontWeight: '700',
             fontFamily: '"Orbitron", sans-serif',
-            padding: '18px 40px',
-            borderRadius: '16px',
+            padding: '14px 32px',
+            borderRadius: '12px',
             border: assetsLoaded ? '2px solid #ffd700' : '2px solid #666',
             background: assetsLoaded 
               ? 'linear-gradient(135deg, #ffd700 0%, #ffb000 50%, #ff8c00 100%)' 
@@ -562,7 +557,7 @@ export default function Home() {
             }
           }}
         >
-          {assetsLoaded ? '▶ START MISSION' : '⚡ LOADING ASSETS...'}
+          {assetsLoaded ? 'START MISSION' : 'LOADING ASSETS...'}
         </button>
         
         {/* Quick Stats */}
@@ -581,97 +576,57 @@ export default function Home() {
         )}
       </div>
 
-      {/* Enhanced Game Instructions */}
+   
+
+      {/* Leaderboard Panel */}
       <div style={{ 
-        marginTop: '24px', 
-        maxWidth: '500px',
+        marginTop: '24px',
+        maxWidth: '600px',
         width: '100%',
         position: 'relative',
         zIndex: 10
       }}>
-        <h3 style={{
-          fontSize: 'clamp(16px, 3vw, 18px)',
-          fontWeight: 'bold',
-          color: '#ffcc00',
-          textAlign: 'center',
-          marginBottom: '12px',
-          fontFamily: '"Orbitron", sans-serif'
-        }}>
-          HOW TO PLAY
-        </h3>
-        <div style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '12px',
-          padding: '16px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: '1fr 1fr', 
-            gap: '8px',
-            fontSize: 'clamp(11px, 2.5vw, 13px)',
-            color: '#ccc'
-          }}>
-            <div>A/D or ←/→ to move</div>
-            <div>SPACE to fire</div>
-            <div>Destroy enemies</div>
-            <div>Collect power-ups</div>
-            <div>Build combos</div>
-            <div>Defeat bosses</div>
-          </div>
-          
-          <div style={{
-            textAlign: 'center',
-            marginTop: '12px',
-            fontSize: 'clamp(10px, 2vw, 11px)',
-            color: '#888',
-            fontStyle: 'italic'
-          }}>
-            Mobile & Desktop optimized • 60 FPS gameplay
-          </div>
-        </div>
+        <LeaderboardComponent />
       </div>
 
-      {/* Guide Button */}
       <button
         onClick={() => setCurrentScreen('guide')}
         style={{
           marginTop: '20px',
-          padding: '14px 28px',
-          fontSize: 'clamp(15px, 3.2vw, 18px)',
-          fontWeight: '700',
+          padding: '16px 48px',
+          fontSize: '14px',
+          fontWeight: '600',
           backgroundColor: 'rgba(0, 191, 255, 0.1)',
-          border: '2px solid #00bfff',
+          border: '1px solid rgba(0, 191, 255, 0.3)',
           borderRadius: '12px',
           color: '#00bfff',
           cursor: 'pointer',
           fontFamily: '"Orbitron", sans-serif',
           transition: 'all 0.3s ease',
-          backdropFilter: 'blur(15px)',
+          backdropFilter: 'blur(10px)',
           position: 'relative',
           zIndex: 9999,
           pointerEvents: 'auto',
-          letterSpacing: '1px',
+          letterSpacing: '2px',
           textTransform: 'uppercase',
-          boxShadow: '0 0 20px rgba(0, 191, 255, 0.2), 0 4px 15px rgba(0,0,0,0.2)'
+          boxShadow: '0 0 15px rgba(0, 191, 255, 0.2), 0 3px 10px rgba(0,0,0,0.2)',
+          minWidth: '200px',
+          width: '100%',
+          maxWidth: '300px'
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.backgroundColor = 'rgba(0, 191, 255, 0.2)';
           e.currentTarget.style.transform = 'scale(1.05) translateY(-1px)';
-          e.currentTarget.style.boxShadow = '0 0 30px rgba(0, 191, 255, 0.4), 0 6px 20px rgba(0,0,0,0.3)';
+          e.currentTarget.style.boxShadow = '0 0 25px rgba(0, 191, 255, 0.4), 0 5px 15px rgba(0,0,0,0.3)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = 'rgba(0, 191, 255, 0.1)';
           e.currentTarget.style.transform = 'scale(1) translateY(0)';
-          e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 191, 255, 0.2), 0 4px 15px rgba(0,0,0,0.2)';
+          e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 191, 255, 0.2), 0 3px 10px rgba(0,0,0,0.2)';
         }}
       >
-        📚 Mission Guide
+        📖 GAME GUIDE
       </button>
-
-      {/* Top Players */}
-   
 
       </div>
     </div>
@@ -680,38 +635,7 @@ export default function Home() {
   return (
     <>
       <style jsx global>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(1.02); }
-        }
-        
-        @keyframes glow {
-          0%, 100% { text-shadow: 0 0 20px currentColor, 0 0 40px currentColor; }
-          50% { text-shadow: 0 0 30px currentColor, 0 0 60px currentColor, 0 0 80px currentColor; }
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          33% { transform: translateY(-10px) rotate(120deg); }
-          66% { transform: translateY(5px) rotate(240deg); }
-        }
-        
-        @keyframes bounce {
-          0%, 20%, 53%, 80%, 100% { transform: translateY(0); }
-          40%, 43% { transform: translateY(-8px); }
-          70% { transform: translateY(-4px); }
-          90% { transform: translateY(-2px); }
-        }
+        /* Static styles only - animations removed */
       `}</style>
       
       <main style={{ 

@@ -71,6 +71,59 @@ export const GameGuide: React.FC<GameGuideProps> = ({ onBackToMenu }) => {
         paddingBottom: 'clamp(8px, 2vw, 12px)',
         boxSizing: 'border-box'
       }}>
+           {/* Enhanced Game Instructions */}
+      <div style={{ 
+        marginTop: '24px', 
+        maxWidth: '100%',
+        width: '100%',
+        position: 'relative',
+        zIndex: 10
+      }}>
+        <h3 style={{
+          fontSize: 'clamp(16px, 3vw, 20px)',
+          fontWeight: 'bold',
+          color: '#ffcc00',
+          textAlign: 'center',
+          marginBottom: '16px',
+          fontFamily: '"Orbitron", sans-serif',
+          letterSpacing: '1px'
+        }}>
+          🎮 HOW TO PLAY
+        </h3>
+        <div style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: '16px',
+          padding: '24px',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+        }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: '12px', 
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
+            color: '#ccc'
+          }}>
+            <div>A/D or Arrow Keys to move</div>
+            <div>SPACE to fire</div>
+            <div>Destroy enemies</div>
+            <div>Collect power-ups</div>
+            <div>Build combos</div>
+            <div>Defeat bosses</div>
+          </div>
+          
+          <div style={{
+            textAlign: 'center',
+            marginTop: '12px',
+            fontSize: 'clamp(10px, 2vw, 11px)',
+            color: '#888',
+            fontStyle: 'italic'
+          }}>
+            Mobile & Desktop optimized - 60 FPS gameplay
+          </div>
+        </div>
+      </div>
         
         {/* Boss Guide Section */}
         <section style={{ marginBottom: 'clamp(8px, 2vw, 16px)' }}>
@@ -82,7 +135,7 @@ export const GameGuide: React.FC<GameGuideProps> = ({ onBackToMenu }) => {
             borderBottom: '1px solid #ff6b35',
             paddingBottom: 'clamp(2px, 0.5vw, 4px)'
           }}>
-            🚀 BOSSES
+            🚀 BOSSES 
           </h2>
           
           <div style={{
@@ -113,17 +166,17 @@ export const GameGuide: React.FC<GameGuideProps> = ({ onBackToMenu }) => {
                 <div>HP</div>
               </div>
               
-              {/* Boss List */}
+              {/* Boss List - Updated with correct levels */}
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(30px, 8vw, 40px) clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 60px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <div style={{ color: '#ffcc00', fontWeight: 'bold' }}>5</div>
-                <Image src="/images/ships/boss/boss-interceptor.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Destroyer" />
+                <Image src="/images/ships/boss/boss-destroyer.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Destroyer" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>DESTROYER</div>
-                <div style={{ color: '#ffcc00' }}>180</div>
+                <div style={{ color: '#ffcc00' }}>100</div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(30px, 8vw, 40px) clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 60px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <div style={{ color: '#ffcc00', fontWeight: 'bold' }}>10</div>
-                <Image src="/images/ships/boss/boss-destroyer.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Interceptor" />
+                <Image src="/images/ships/boss/boss-interceptor.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Interceptor" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>INTERCEPTOR</div>
                 <div style={{ color: '#ffcc00' }}>200</div>
               </div>
@@ -182,7 +235,7 @@ export const GameGuide: React.FC<GameGuideProps> = ({ onBackToMenu }) => {
                 <div style={{ color: '#dc143c', fontWeight: 'bold' }}>50</div>
                 <Image src="/images/ships/boss/boss-colossus.png" width={28} height={28} style={{ objectFit: 'contain', filter: 'drop-shadow(0 0 6px #dc143c)' }} alt="Colossus" />
                 <div style={{ fontWeight: 'bold', color: '#dc143c' }}>COLOSSUS</div>
-                <div style={{ color: '#dc143c', fontWeight: 'bold' }}>3500</div>
+                <div style={{ color: '#dc143c', fontWeight: 'bold' }}>3000</div>
               </div>
             </div>
           </div>
@@ -215,37 +268,37 @@ export const GameGuide: React.FC<GameGuideProps> = ({ onBackToMenu }) => {
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(40px, 10vw, 50px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <Image src="/images/ships/enemy/enemy-basic.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Basic" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>BASIC</div>
-                <div style={{ color: '#44ff44' }}>20 HP</div>
+                <div style={{ color: '#44ff44' }}>1 HP</div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(40px, 10vw, 50px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <Image src="/images/ships/enemy/enemy-shooter.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Shooter" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>SHOOTER</div>
-                <div style={{ color: '#44ff44' }}>25 HP</div>
+                <div style={{ color: '#44ff44' }}>2 HP</div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(40px, 10vw, 50px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <Image src="/images/ships/enemy/enemy-kamikaze.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Kamikaze" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>KAMIKAZE</div>
-                <div style={{ color: '#44ff44' }}>15 HP</div>
+                <div style={{ color: '#44ff44' }}>1 HP</div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(40px, 10vw, 50px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <Image src="/images/ships/enemy/enemy-bomber.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Bomber" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>BOMBER</div>
-                <div style={{ color: '#44ff44' }}>35 HP</div>
+                <div style={{ color: '#44ff44' }}>4 HP</div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(40px, 10vw, 50px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <Image src="/images/ships/enemy/enemy-stealth.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Stealth" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>STEALTH</div>
-                <div style={{ color: '#44ff44' }}>18 HP</div>
+                <div style={{ color: '#44ff44' }}>4 HP</div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(40px, 10vw, 50px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <Image src="/images/ships/enemy/enemy-assassin.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Assassin" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>ASSASSIN</div>
-                <div style={{ color: '#44ff44' }}>22 HP</div>
+                <div style={{ color: '#44ff44' }}>5 HP</div>
               </div>
             </div>
           </div>
@@ -261,7 +314,7 @@ export const GameGuide: React.FC<GameGuideProps> = ({ onBackToMenu }) => {
             borderBottom: '1px solid #4444ff',
             paddingBottom: 'clamp(2px, 0.5vw, 4px)'
           }}>
-            🚢 SHIPS
+            🚢 SHIP UPGRADES
           </h2>
           
           <div style={{
@@ -275,34 +328,69 @@ export const GameGuide: React.FC<GameGuideProps> = ({ onBackToMenu }) => {
               gap: 'clamp(4px, 1vw, 8px)',
               fontSize: 'clamp(9px, 1.5vw, 11px)'
             }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(60px, 15vw, 80px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
-                <Image src="/images/ships/player/player-ship-basic.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Basic Ship" />
+              {/* Ship Header */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px) clamp(40px, 10vw, 50px)',
+                gap: 'clamp(4px, 1vw, 6px)',
+                alignItems: 'center',
+                padding: 'clamp(2px, 1vw, 4px)',
+                borderBottom: '2px solid rgba(68, 68, 255, 0.3)',
+                fontWeight: 'bold',
+                color: '#4444ff'
+              }}>
+                <div>IMG</div>
+                <div>CLASS</div>
+                <div>SHOTS</div>
+                <div>PWR</div>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px) clamp(40px, 10vw, 50px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
+                <Image src="/images/ships/player/player-ship-basic.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Basic Fighter" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>BASIC (1-9)</div>
-                <div style={{ color: '#4444ff' }}>Single Shot</div>
+                <div style={{ color: '#4444ff' }}>1</div>
+                <div style={{ color: '#ffcc00' }}>3</div>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(60px, 15vw, 80px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)', backgroundColor: 'rgba(68, 68, 255, 0.1)', borderRadius: '6px' }}>
-                <Image src="/images/ships/player/player-ship-elite.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Elite Ship" />
+              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px) clamp(40px, 10vw, 50px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)', backgroundColor: 'rgba(68, 68, 255, 0.1)', borderRadius: '6px' }}>
+                <Image src="/images/ships/player/player-ship-elite.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Elite Interceptor" />
                 <div style={{ fontWeight: 'bold', color: '#4444ff' }}>ELITE (10-19)</div>
-                <div style={{ color: '#4444ff' }}>Double Shot</div>
+                <div style={{ color: '#4444ff' }}>2</div>
+                <div style={{ color: '#ffcc00' }}>5</div>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(60px, 15vw, 80px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)', backgroundColor: 'rgba(255, 140, 0, 0.1)', borderRadius: '6px' }}>
-                <Image src="/images/ships/player/player-ship-commander.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Commander Ship" />
+              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px) clamp(40px, 10vw, 50px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)', backgroundColor: 'rgba(255, 140, 0, 0.1)', borderRadius: '6px' }}>
+                <Image src="/images/ships/player/player-ship-commander.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Commander Cruiser" />
                 <div style={{ fontWeight: 'bold', color: '#ff8c00' }}>COMMANDER (20-29)</div>
-                <div style={{ color: '#ff8c00' }}>Triple Shot</div>
+                <div style={{ color: '#ff8c00' }}>3</div>
+                <div style={{ color: '#ffcc00' }}>7</div>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(60px, 15vw, 80px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)', backgroundColor: 'rgba(255, 215, 0, 0.1)', borderRadius: '6px' }}>
-                <Image src="/images/ships/player/player-ship-legend.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Legend Ship" />
+              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px) clamp(40px, 10vw, 50px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)', backgroundColor: 'rgba(255, 215, 0, 0.1)', borderRadius: '6px' }}>
+                <Image src="/images/ships/player/player-ship-legend.png" width={28} height={28} style={{ objectFit: 'contain' }} alt="Legend Battleship" />
                 <div style={{ fontWeight: 'bold', color: '#ffd700' }}>LEGEND (30-39)</div>
-                <div style={{ color: '#ffd700' }}>Quad Shot</div>
+                <div style={{ color: '#ffd700' }}>4</div>
+                <div style={{ color: '#ffcc00' }}>9</div>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(60px, 15vw, 80px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)', backgroundColor: 'rgba(255, 0, 255, 0.15)', border: '2px solid rgba(255, 0, 255, 0.5)', borderRadius: '6px' }}>
-                <Image src="/images/ships/player/player-ship-dreadnought.png" width={28} height={28} style={{ objectFit: 'contain', filter: 'hue-rotate(270deg) saturate(1.5)' }} alt="Supreme Ship" />
-                <div style={{ fontWeight: 'bold', color: '#ff00ff' }}>SUPREME (40+)</div>
-                <div style={{ color: '#ff00ff', fontWeight: 'bold' }}>Penta Shot</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px) clamp(40px, 10vw, 50px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)', backgroundColor: 'rgba(255, 0, 255, 0.15)', border: '2px solid rgba(255, 0, 255, 0.5)', borderRadius: '6px' }}>
+                <Image src="/images/ships/player/player-ship-dreadnought.png" width={28} height={28} style={{ objectFit: 'contain', filter: 'hue-rotate(270deg) saturate(1.5)' }} alt="Supreme Dreadnought" />
+                <div style={{ fontWeight: 'bold', color: '#ff00ff' }}>SUPREME (40-50)</div>
+                <div style={{ color: '#ff00ff', fontWeight: 'bold' }}>5</div>
+                <div style={{ color: '#ffcc00', fontWeight: 'bold' }}>10</div>
+              </div>
+              
+              {/* Note */}
+              <div style={{
+                marginTop: 'clamp(4px, 1vw, 6px)',
+                padding: 'clamp(2px, 0.8vw, 4px)',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '6px',
+                fontSize: 'clamp(8px, 1.4vw, 10px)',
+                color: '#ccc',
+                borderLeft: '3px solid #4444ff'
+              }}>
+                <strong style={{ color: '#4444ff' }}>PWR:</strong> Max active power-ups capacity
               </div>
             </div>
           </div>
@@ -347,25 +435,43 @@ export const GameGuide: React.FC<GameGuideProps> = ({ onBackToMenu }) => {
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <Image src="/images/power-up/triple-shot.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Triple Shot" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>TRIPLE SHOT</div>
-                <div style={{ color: '#ffcc00' }}>12s</div>
+                <div style={{ color: '#ffcc00' }}>15s</div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <Image src="/images/power-up/laser-beam.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Laser Beam" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>LASER BEAM</div>
-                <div style={{ color: '#ff6b35' }}>10s</div>
+                <div style={{ color: '#ff6b35' }}>8s</div>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
+                <Image src="/images/power-up/speed-boost.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Speed Boost" />
+                <div style={{ fontWeight: 'bold', color: '#fff' }}>SPEED BOOST</div>
+                <div style={{ color: '#00ff00' }}>15s</div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <Image src="/images/power-up/shield.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Shield" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>SHIELD</div>
-                <div style={{ color: '#4444ff' }}>6s</div>
+                <div style={{ color: '#4444ff' }}>15s</div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
                 <Image src="/images/power-up/invincibility.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Invincibility" />
                 <div style={{ fontWeight: 'bold', color: '#fff' }}>INVINCIBILITY</div>
-                <div style={{ color: '#ffd700' }}>8s</div>
+                <div style={{ color: '#ffd700' }}>15s</div>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
+                <Image src="/images/power-up/magnet.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Magnet" />
+                <div style={{ fontWeight: 'bold', color: '#fff' }}>MAGNET</div>
+                <div style={{ color: '#ff69b4' }}>15s</div>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'clamp(25px, 6vw, 35px) 1fr clamp(50px, 12vw, 70px)', gap: 'clamp(4px, 1vw, 6px)', alignItems: 'center', padding: 'clamp(2px, 0.8vw, 4px)' }}>
+                <Image src="/images/power-up/time-slow.png" width={24} height={24} style={{ objectFit: 'contain' }} alt="Time Slow" />
+                <div style={{ fontWeight: 'bold', color: '#fff' }}>TIME SLOW</div>
+                <div style={{ color: '#9932cc' }}>15s</div>
               </div>
             </div>
           </div>
@@ -394,10 +500,13 @@ export const GameGuide: React.FC<GameGuideProps> = ({ onBackToMenu }) => {
             color: '#ccc'
           }}>
             <div style={{ marginBottom: 'clamp(6px, 1.5vw, 8px)' }}>
-              <strong style={{ color: '#ff44ff' }}>Priority:</strong> Heart → Invincibility → Triple Shot → Others
+              <strong style={{ color: '#ff44ff' }}>Priority:</strong> Heart → Invincibility → Triple Shot → Time Slow → Magnet
             </div>
             <div style={{ marginBottom: 'clamp(6px, 1.5vw, 8px)' }}>
-              <strong style={{ color: '#ff44ff' }}>Combo:</strong> Hit enemies consecutively for higher scores
+              <strong style={{ color: '#ff44ff' }}>Combo:</strong> Hit enemies consecutively for 3x score multiplier
+            </div>
+            <div style={{ marginBottom: 'clamp(6px, 1.5vw, 8px)' }}>
+              <strong style={{ color: '#ff44ff' }}>Capacity:</strong> Ships can hold 3-10 power-ups (increases with ship class)
             </div>
             <div>
               <strong style={{ color: '#ff44ff' }}>Mobile:</strong> Touch & drag to move, auto-fire enabled
