@@ -61,6 +61,22 @@ export const useFarcaster = () => {
     }
   }, [isInMiniApp]);
 
+  const addMiniApp = useCallback(async () => {
+    try {
+      const inMiniApp = await sdk.isInMiniApp();
+      if (!inMiniApp) {
+        console.warn('Not in mini app environment');
+        return false;
+      }
+
+      await sdk.actions.addMiniApp();
+      return true;
+    } catch (error) {
+      console.error('Failed to add mini app:', error);
+      return false;
+    }
+  }, []);
+
   return {
     isInMiniApp,
     isReady,
@@ -68,6 +84,7 @@ export const useFarcaster = () => {
     sdk,
     composeCast,
     getEthereumProvider,
+    addMiniApp,
   };
 };
 

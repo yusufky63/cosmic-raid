@@ -22,12 +22,21 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
     startGame,
     togglePause,
     resetGame,
+    endGame,
   } = useGameState();
 
   // Restart game function
   const handleRestart = () => {
     resetGame();
     startGame();
+  };
+
+  // Enhanced back to menu function with cleanup
+  const handleBackToMenu = () => {
+    console.log('🏠 Returning to menu - ending game properly');
+    endGame(); // Stop all intervals and cleanup
+    resetGame(); // Reset to initial state
+    onBackToMenu(); // Navigate back to menu
   };
 
 
@@ -37,6 +46,15 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
       startGame();
     }
   }, [gameState.isPlaying, gameState.gameOver, startGame]);
+
+  // Cleanup when component unmounts (when returning to menu)
+  React.useEffect(() => {
+    return () => {
+      console.log('🧹 SpaceImpactGame component unmounting - cleaning up game state');
+      endGame(); // This will stop all intervals and cleanup properly
+      resetGame(); // Reset to initial state
+    };
+  }, [endGame, resetGame]);
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
@@ -63,7 +81,7 @@ export const SpaceImpactGame: React.FC<SpaceImpactGameProps> = ({
             gameState={gameState}
             gameObjects={gameObjects}
             onRestartGame={handleRestart}
-            onBackToMenu={onBackToMenu}
+            onBackToMenu={handleBackToMenu}
             onResumeGame={togglePause}
             gameStartTime={gameState.gameStartTime}
           />

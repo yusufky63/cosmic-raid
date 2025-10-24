@@ -237,19 +237,19 @@ Think you can beat my score? 🎯`;
               {/* Header */}
               <div className="mb-4">
              
-                <h2 className="text-xl font-semibold text-white mb-1">Mission Failed</h2>
-                <p className="text-gray-400 text-sm">Better luck next time, pilot</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-1">Mission Failed</h2>
+                <p className="text-gray-400 text-xs sm:text-sm">Better luck next time, pilot</p>
               </div>
 
               {/* Stats Grid */}
-              <div className="mb-5 grid grid-cols-2 gap-3">
+              <div className="mb-2 grid grid-cols-2 gap-3">
                 <div className="bg-white/5 rounded-lg border border-white/10 py-3 px-2">
-                  <div className="text-xs text-gray-400 mb-1">Score</div>
-                  <div className="text-lg font-bold text-white">{gameState.score.toLocaleString()}</div>
+                  <div className="text-xs sm:text-sm text-gray-400 mb-1">Score</div>
+                  <div className="text-base sm:text-lg font-bold text-white">{gameState.score.toLocaleString()}</div>
                 </div>
                 <div className="bg-white/5 rounded-lg border border-white/10 py-3 px-2">
-                  <div className="text-xs text-gray-400 mb-1">Level</div>
-                  <div className="text-lg font-bold text-white">{gameState.level}</div>
+                  <div className="text-xs sm:text-sm text-gray-400 mb-1">Level</div>
+                  <div className="text-base sm:text-lg font-bold text-white">{gameState.level}</div>
                 </div>
               </div>
 
@@ -296,7 +296,7 @@ Think you can beat my score? 🎯`;
                     : 'bg-yellow-600 hover:bg-yellow-500 text-white'
                 }`}
               >
-                {isSubmittingScore || isPending ? '💾 SAVING...' : ' SAVE TO LEADERBOARD'}
+                {isSubmittingScore || isPending ? 'Saving...' : 'Save to Leaderboard'}
               </button>
             )}
 

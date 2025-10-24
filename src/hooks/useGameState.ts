@@ -20,6 +20,7 @@ import {
   createExplosionPool,
   PerformanceMonitor,
 } from "@/utils/ObjectPool";
+import { useFarcaster } from "@/hooks/useFarcaster";
 
 const initialGameState: GameState = {
   score: 0,
@@ -83,10 +84,14 @@ export const useGameState = () => {
   const lastEnemyShotFrameRef = useRef<number>(0); // Prevent frame-based bullet spam
   const globalEnemyFireLockRef = useRef<boolean>(false); // Global fire lock to prevent multiple enemies firing
   
-  // Mobile detection for optimized firing rates and performance
+  // Get Farcaster context for better mobile detection
+  const { isInMiniApp } = useFarcaster();
+  
+  // Mobile detection: Farcaster miniapp + mobile devices + small screens
   const isMobile = typeof window !== 'undefined' && 
-    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-     window.innerWidth <= 768); // Mobile based on screen size or user agent
+    (isInMiniApp || // Farcaster miniapp = mobile experience
+     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+     window.innerWidth <= 768); // Small screen = mobile experience
 
   // Player güç seviyesine göre düşman dengelemesi
   const getPlayerPowerLevel = useCallback(() => {
@@ -105,14 +110,14 @@ export const useGameState = () => {
     return 1; // Basic
   }, [gameState.powerUps, gameState.level]);
 
-  // Performance optimization system
+  // Mobile-optimized performance system (PC vs Mobile/Small Screen)
   const performanceConfig: PerformanceConfig = {
     enableObjectPooling: false, // Temporarily disabled for explosion stability
     enableSpatialOptimization: true,
-    maxBullets: isMobile ? 20 : 35,
-    maxEnemies: isMobile ? 8 : 12,
-    maxExplosions: isMobile ? 12 : 20, // Increased for better visual effects
-    targetFPS: isMobile ? 30 : 60,
+    maxBullets: isMobile ? 25 : 35,        // Mobile/Small screen vs Desktop
+    maxEnemies: isMobile ? 10 : 12,        // Mobile/Small screen vs Desktop  
+    maxExplosions: isMobile ? 16 : 20,     // Mobile/Small screen vs Desktop
+    targetFPS: isMobile ? 45 : 60,         // Mobile/Small screen vs Desktop
   };
 
   // Performance optimization refs (currently setup for future use)
@@ -133,12 +138,13 @@ export const useGameState = () => {
       console.log(`🎮 Game Mode Detection:
         - User Agent Mobile: ${userAgent}
         - Small Screen: ${screenSize} (${window.innerWidth}px)
-        - Final Mobile Mode: ${isMobile ? '📱 MOBILE (30 FPS)' : '🖥️ DESKTOP (60 FPS)'}
+        - In Farcaster MiniApp: ${isInMiniApp}
+        - Final Mobile Mode: ${isMobile ? '📱 MOBILE (45 FPS)' : '🖥️ DESKTOP (60 FPS)'}
         - Window Size: ${window.innerWidth}x${window.innerHeight}
-        - isMobile Value: ${isMobile}
-        - Enemy Speed Multiplier: ${isMobile ? '6.2x' : '0.4x'}`);
+        - Performance: ${isMobile ? 'Mobile-optimized (touch controls)' : 'Desktop-optimized (keyboard/mouse)'}
+        - Hardware: ${isMobile ? 'Low-power devices' : 'High-performance PC'}`);
     }
-  }, [isMobile]);
+  }, [isMobile, isInMiniApp]);
 
   // Collision detection - restored to original accuracy
   const checkCollision = useCallback(
@@ -288,13 +294,16 @@ export const useGameState = () => {
     [createExplosion]
   );
 
-  // Move ship - daha hÄ±zlÄ± hareket
+  // Move ship - daha
   const moveShip = useCallback(
     (direction: "left" | "right") => {
       if (!gameState.isPlaying || gameState.isPaused) return;
 
       setGameObjects((prev) => {
-        const speed = isMobile ? GAME_CONFIG.SHIP_SPEED * 1.5 : GAME_CONFIG.SHIP_SPEED; // 50% faster on mobile
+        // Mobile-optimized ship speed (touch controls need faster movement)
+        const speed = isMobile 
+          ? GAME_CONFIG.SHIP_SPEED * 1.4  // Mobile/Small screen speed
+          : GAME_CONFIG.SHIP_SPEED; // Desktop speed
         const newX =
           direction === "left"
             ? Math.max(0, prev.ship.x - speed)
@@ -373,7 +382,12 @@ export const useGameState = () => {
       const newBullets: Bullet[] = [];
       const scoreSpeedBonus = Math.floor(gameState.score / 2000) * 1; // Every 2000 points = +1 speed
       const levelSpeedBonus = (gameState.level - 1) * 0.5; // Each level = +0.5 speed
-      const mobileSpeedBonus = isMobile ? 6 : 0; // Ultra fast bullets on mobile
+      
+      // Mobile-optimized bullet speed (faster bullets for touch controls)
+      const mobileSpeedBonus = isMobile 
+        ? 5  // Mobile/Small screen bullet speed boost
+        : 0; // Desktop standard speed
+          
       const bulletSpeed =
         GAME_CONFIG.BULLET_SPEED + scoreSpeedBonus + levelSpeedBonus + mobileSpeedBonus;
               // Level-based bullet size: reduce by 20px for levels 20+ (Commander/Legend/Supreme)
@@ -578,12 +592,19 @@ export const useGameState = () => {
 
   // Spawn enemy - eski oyunun 
   const spawnEnemy = useCallback(() => {
+    // Safety check - don't spawn if intervals are not active
+    if (!enemySpawnRef.current && !waveSpawnRef.current) {
+      return;
+    }
+    
     // Current state'i al
     setGameState((currentState) => {
       console.log("spawnEnemy called", {
         isBossFight: currentState.isBossFight,
         isPaused: currentState.isPaused,
         isPlaying: currentState.isPlaying,
+        enemySpawnRef: enemySpawnRef.current,
+        waveSpawnRef: waveSpawnRef.current,
       });
 
       // Don't spawn enemies during boss fight or when paused
@@ -664,13 +685,25 @@ export const useGameState = () => {
       }
 
       const enemyConfig = GAME_CONFIG.ENEMY_TYPES[enemyType];
-      const speedMultiplier = isMobile ? 1.04 : 0.52; // %30 artırıldı: 0.8->1.04, 0.4->0.52
+      
+      // Mobile-optimized enemy speed (balanced for hardware differences)
+      const speedMultiplier = isMobile 
+        ? 0.90  // Mobile/Small screen speed (balanced)
+        : 0.52; // Desktop speed
+          
       const levelBonus = Math.min(24, currentState.level - 1);
-      const baseSpeedBonus = isMobile ? 1.0 : 0; // Daha düşük base bonus
+      
+      const baseSpeedBonus = isMobile 
+        ? 0.7   // Mobile/Small screen base speed
+        : 0;    // Desktop base speed
+          
       const calculatedSpeed = (enemyConfig.speed + baseSpeedBonus) * (1 + levelBonus * speedMultiplier);
       
-      // Maksimum hız sınırlaması - %30 artırıldı
-      const maxSpeed = isMobile ? 6.5 : 5.2; // %30 artış: 5->6.5, 4->5.2
+      // Hardware-optimized max speed limits
+      const maxSpeed = isMobile 
+        ? 5.0   // Mobile/Small screen max speed
+        : 4.2;  // Desktop max speed
+          
       const finalSpeed = Math.min(calculatedSpeed, maxSpeed);
       
       const newEnemy: Enemy = {
@@ -957,24 +990,36 @@ export const useGameState = () => {
       const powerMultiplier = 1 + (playerPower - 1) * 0.15; // Her güç seviyesi %15 daha hızlı spawn
       
       console.log(`🎮 Starting enemy spawn intervals... Player Power: ${playerPower}, Multiplier: ${powerMultiplier.toFixed(2)}x`);
-      const baseSpawnInterval = isMobile ? 280 : 1260; // %30 azaltıldı: 400->280, 1800->1260
+      
+      // Mobile-optimized spawn intervals (balanced for hardware performance)
+      const baseSpawnInterval = isMobile 
+        ? 350  // Mobile/Small screen spawn rate
+        : 1260; // Desktop spawn rate
+          
       const spawnInterval = Math.floor(baseSpawnInterval / powerMultiplier);
       enemySpawnRef.current = window.setInterval(() => {
-        console.log("Spawn interval triggered");
         spawnEnemy();
       }, spawnInterval);
+      console.log('🟢 Enemy spawn interval started:', enemySpawnRef.current);
 
-      // Player gücüne göre dinamik wave spawn
-      const baseWaveInterval = isMobile ? 700 : 3500; // %30 azaltıldı: 1000->700, 5000->3500
+      // Player gücüne göre dinamik wave spawn - Mobile-optimized
+      const baseWaveInterval = isMobile 
+        ? 900   // Mobile/Small screen wave spawn
+        : 3500; // Desktop wave spawn
+          
       const waveInterval = Math.floor(baseWaveInterval / powerMultiplier);
       waveSpawnRef.current = window.setInterval(() => {
-        console.log("Wave spawn interval triggered");
         spawnEnemy();
       }, waveInterval);
+      console.log('🟢 Wave spawn interval started:', waveSpawnRef.current);
 
-      // Mobile-optimized power-up spawn: Balanced frequency
-      const powerUpInterval = isMobile ? 8000 : 10000; // 8s on mobile (balanced), 10s on desktop
+      // Mobile-optimized power-up spawn (balanced frequency)
+      const powerUpInterval = isMobile 
+        ? 8500   // Mobile/Small screen power-up spawn (8.5s)
+        : 10000; // Desktop power-up spawn (10s)
+          
       powerUpSpawnRef.current = window.setInterval(spawnPowerUp, powerUpInterval);
+      console.log('🟢 Power-up spawn interval started:', powerUpSpawnRef.current);
 
       console.log("All spawn intervals started");
     }, 100); // 100ms gecikme
@@ -1003,9 +1048,9 @@ export const useGameState = () => {
         // Resume - restart spawning if not in boss fight
         if (!prev.isBossFight) {
           const currentLevel = prev.level;
-          // Mobile-optimized resume spawn rates - %30 daha hızlı
-          const baseSpawnInterval = isMobile ? 210 : 1050; // %30 azaltıldı: 300->210, 1500->1050
-          const baseWaveInterval = isMobile ? 560 : 4200; // %30 azaltıldı: 800->560, 6000->4200
+          // Mobile-optimized resume spawn rates
+          const baseSpawnInterval = isMobile ? 280 : 1050; // Mobile/Small screen vs Desktop
+          const baseWaveInterval = isMobile ? 700 : 4200; // Mobile/Small screen vs Desktop
           const newSpawnInterval = Math.max(
             baseSpawnInterval,
             5000 - (currentLevel - 1) * 200
@@ -1027,8 +1072,8 @@ export const useGameState = () => {
           waveSpawnRef.current = window.setInterval(() => {
             for (let i = 0; i < newWaveEnemyCount; i++) spawnEnemy();
           }, newWaveInterval);
-          // Mobile-optimized power-up spawn on resume - Balanced frequency
-          const powerUpInterval = isMobile ? 8000 : 10000;
+          // Mobile-optimized power-up spawn on resume
+          const powerUpInterval = isMobile ? 8500 : 10000;
           powerUpSpawnRef.current = window.setInterval(spawnPowerUp, powerUpInterval);
         }
       }
@@ -1039,20 +1084,33 @@ export const useGameState = () => {
 
   // End game
   const endGame = useCallback(() => {
+    console.log('🛑 endGame called - stopping all intervals and game loop');
     setGameState((prev) => ({ ...prev, isPlaying: false, gameOver: true }));
 
+    // Clear game loop
     if (gameLoopRef.current) {
       cancelAnimationFrame(gameLoopRef.current);
+      gameLoopRef.current = 0;
     }
+    
+    // Clear all spawn intervals with debug logging
     if (enemySpawnRef.current) {
+      console.log('🧹 Clearing enemy spawn interval:', enemySpawnRef.current);
       clearInterval(enemySpawnRef.current);
+      enemySpawnRef.current = 0;
     }
     if (powerUpSpawnRef.current) {
+      console.log('🧹 Clearing power-up spawn interval:', powerUpSpawnRef.current);
       clearInterval(powerUpSpawnRef.current);
+      powerUpSpawnRef.current = 0;
     }
     if (waveSpawnRef.current) {
+      console.log('🧹 Clearing wave spawn interval:', waveSpawnRef.current);
       clearInterval(waveSpawnRef.current);
+      waveSpawnRef.current = 0;
     }
+    
+    console.log('✅ All intervals cleared in endGame');
   }, []);
 
   // Game loop - Optimized for better performance with adaptive quality
@@ -2159,8 +2217,8 @@ export const useGameState = () => {
                   waveSpawnRef.current = window.setInterval(() => {
                     for (let i = 0; i < newWaveEnemyCount; i++) spawnEnemy();
                   }, newWaveInterval);
-                  // Mobile-optimized power-up spawn after boss defeat - Balanced frequency
-                  const powerUpInterval = isMobile ? 8000 : 10000;
+                  // Mobile-optimized power-up spawn after boss defeat
+                  const powerUpInterval = isMobile ? 8500 : 10000;
                   powerUpSpawnRef.current = window.setInterval(
                     spawnPowerUp,
                     powerUpInterval
@@ -2718,25 +2776,30 @@ export const useGameState = () => {
 
   // Reset game function
   const resetGame = useCallback(() => {
+    console.log('🔄 resetGame called - clearing all intervals and resetting state');
     setGameState(initialGameState);
     setGameObjects(initialGameObjects);
 
-    // Clear all intervals
+    // Clear all intervals with debug logging
     if (enemySpawnRef.current) {
+      console.log('🧹 Clearing enemy spawn interval in resetGame:', enemySpawnRef.current);
       clearInterval(enemySpawnRef.current);
       enemySpawnRef.current = 0;
     }
     if (waveSpawnRef.current) {
+      console.log('🧹 Clearing wave spawn interval in resetGame:', waveSpawnRef.current);
       clearInterval(waveSpawnRef.current);
       waveSpawnRef.current = 0;
     }
     if (powerUpSpawnRef.current) {
+      console.log('🧹 Clearing power-up spawn interval in resetGame:', powerUpSpawnRef.current);
       clearInterval(powerUpSpawnRef.current);
       powerUpSpawnRef.current = 0;
     }
 
     // Clear game loop
     if (gameLoopRef.current) {
+      console.log('🧹 Clearing game loop in resetGame:', gameLoopRef.current);
       cancelAnimationFrame(gameLoopRef.current);
       gameLoopRef.current = 0;
     }
@@ -2744,6 +2807,8 @@ export const useGameState = () => {
     lastPlayerShotRef.current = 0;
     lastTimeRef.current = 0;
     lastEnemyShotFrameRef.current = 0;
+    
+    console.log('✅ resetGame completed - all intervals cleared and state reset');
   }, []);
 
   return {

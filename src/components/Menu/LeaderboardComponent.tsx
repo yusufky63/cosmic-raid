@@ -77,13 +77,13 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
       background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(20, 20, 40, 0.8) 100%)',
       border: '1px solid rgba(59, 130, 246, 0.3)',
       borderRadius: '16px',
-      padding: '24px',
-      marginBottom: '16px',
+      padding: '16px',
+      marginBottom: '8px',
       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
       minHeight: '320px',
       width: '100%'
     }} className={className}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
             width: '4px',
@@ -92,7 +92,7 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
             borderRadius: '2px'
           }}></div>
           <h3 style={{
-            fontSize: '18px',
+            fontSize: '12px',
             fontWeight: 'bold',
             color: '#60a5fa',
             fontFamily: '"Orbitron", sans-serif',
@@ -106,7 +106,7 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
           <button
             onClick={() => setShowAll(!showAll)}
             style={{
-              padding: '6px 12px',
+              padding: '4px 8px',
               background: showAll 
                 ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' 
                 : 'rgba(37, 99, 235, 0.15)',
@@ -127,7 +127,7 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
             onClick={handleRefresh}
             disabled={isLoading || refreshing}
             style={{
-              padding: '6px 8px',
+              padding: '4px 6px',
               background: 'rgba(37, 99, 235, 0.15)',
               border: '1px solid rgba(59, 130, 246, 0.4)',
               borderRadius: '8px',
@@ -149,7 +149,7 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
           color: '#f87171',
           fontSize: '12px',
           textAlign: 'center',
-          padding: '12px',
+          padding: '8px',
           background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05))',
           borderRadius: '10px',
           border: '1px solid rgba(239, 68, 68, 0.3)',
@@ -162,7 +162,7 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
       {(isLoading && entries.length === 0) ? (
         <div style={{
           textAlign: 'center',
-          padding: '20px',
+          padding: '16px',
           color: '#9ca3af',
           fontSize: '12px'
         }}>
@@ -171,7 +171,7 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
       ) : entries.length === 0 ? (
         <div style={{
           textAlign: 'center',
-          padding: '20px',
+          padding: '16px',
           color: '#9ca3af',
           fontSize: '12px'
         }}>
@@ -194,7 +194,7 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '12px 16px',
+                  padding: '8px 12px',
                   borderRadius: '10px',
                   background: index === 0
                     ? 'linear-gradient(135deg, rgba(250, 204, 21, 0.2), rgba(234, 179, 8, 0.1))'
@@ -217,8 +217,8 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{
-                    minWidth: '28px',
-                    height: '28px',
+                    minWidth: '24px',
+                    height: '24px',
                     borderRadius: '50%',
                     background: index === 0
                       ? 'linear-gradient(135deg, #fbbf24, #f59e0b)'
@@ -230,7 +230,7 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12px',
+                    fontSize: '10px',
                     fontWeight: 'bold',
                     color: index < 3 ? '#000' : '#fff',
                     boxShadow: index < 3 
@@ -246,8 +246,8 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
                       src={profile.pfpUrl}
                       alt={profile.displayName}
                       style={{
-                        width: '20px',
-                        height: '20px',
+                        width: '16px',
+                        height: '16px',
                         borderRadius: '50%',
                         border: '1px solid rgba(255,255,255,0.1)'
                       }}
@@ -255,7 +255,7 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
                   ) : null}
                   <div>
                     <div style={{ 
-                      fontSize: '14px', 
+                      fontSize: '12px', 
                       fontWeight: '600', 
                       color: '#fff',
                       fontFamily: profile?.displayName ? '"Inter", sans-serif' : 'monospace',
@@ -263,14 +263,14 @@ export const LeaderboardComponent: React.FC<LeaderboardComponentProps> = ({ clas
                     }}>
                       {profile?.displayName || formatAddress(entry.address)}
                     </div>
-                    <div style={{ color: '#9ca3af', fontSize: '12px', fontWeight: '500' }}>
+                    <div style={{ color: '#9ca3af', fontSize: '10px', fontWeight: '500' }}>
                       Level {entry.level} - {formatTime(entry.time)}
                     </div>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ 
-                    fontSize: '15px', 
+                    fontSize: '13px', 
                     fontWeight: 'bold', 
                     color: index < 3 ? '#fbbf24' : '#fff',
                     fontFamily: 'monospace',
