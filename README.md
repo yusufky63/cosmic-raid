@@ -1,81 +1,48 @@
 # Cosmic Raid
 
-Cosmic Raid is a Farcaster arcade game experiment with wallet integration, mobile layout, game assets, and leaderboard-oriented UI.
+Cosmic Raid is a Farcaster-oriented arcade game experiment built with Next.js, TypeScript, wallet libraries, and mobile-first game UI components.
 
-## Snapshot
+The project combines an arcade shooter-style product surface with Farcaster initialization, wallet connection, and leaderboard-ready screens.
 
-- **Category:** Farcaster arcade game
-- **Status:** Public repository
-- **Live:** https://cosmic-raid.vercel.app
-- **Repository:** https://github.com/yusufky63/cosmic-raid
-- **Portfolio:** https://codexsha.dev
+## Features
 
-## Product Scope
+- Arcade game shell with cosmic/shooter-style UI direction.
+- Farcaster Mini App SDK and Quick Auth integration.
+- Wallet connection with Wagmi, Viem, and Ethers.
+- Mobile-first layout for Farcaster clients.
+- Leaderboard-oriented product structure.
+- Image optimization script for asset preparation.
 
-Cosmic Raid is documented here as a product repository, not just a code dump. The goal of this README is to make the product purpose, runtime surface, and development path clear for future review and maintenance.
-
-## Core Capabilities
-
-- Arcade shooter-style interface
-- Wallet connect/disconnect flow
-- Mobile Farcaster layout
-- Leaderboard-oriented product surface
-- Ships, power-ups, effects, and optimized image assets
-
-## Existing README Coverage Preserved
-
-This refresh keeps the important project-specific areas from the previous documentation:
-
-- README was missing before this documentation refresh
-
-## Tech Stack
-
-- Next.js
-- TypeScript
-- Farcaster SDK
-- Wagmi
-- Viem
-- Ethers
-- React Query
-- Axios
-
-## Repository Map
-
-| Path | Purpose |
+| Layer | Tools |
 | --- | --- |
-| src/app/ | App routes and shell |
-| src/components/ | Game-facing UI and wallet components |
-| public/images/ | Ships, effects, and power-up assets |
-| optimize-images.js | Image optimization utility |
+| App | Next.js, React, TypeScript, Tailwind CSS |
+| Farcaster | Mini App SDK, Mini App Wagmi Connector, Quick Auth |
+| Web3 | Wagmi, Viem, Ethers |
+| Data/Utilities | React Query, Axios, Joi, optimize-images script |
 
-## Local Development
+## Project Structure
+
+- `src/` - game UI, routes, state, Farcaster setup, and wallet logic.
+- `public/` - game assets and metadata.
+- `optimize-images.js` - asset optimization helper.
+- `tailwind.config.js` - styling configuration.
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
 
 | Command | Purpose |
 | --- | --- |
-| npm run dev | Run development server |
-| npm run build | Build production app |
-| npm run start | Start production server |
-| npm run lint | Run lint checks |
-| npm run optimize-images | Run image optimization pipeline |
+| `npm run dev` | Start the development server. |
+| `npm run build` | Build for production. |
+| `npm start` | Run the production server. |
+| `npm run lint` | Run lint checks. |
+| `npm run optimize-images` | Optimize image assets before deployment when needed. |
 
-## Environment Notes
+## Status
 
-Use local environment files for secrets and deployment-specific values. Do not commit real keys.
-
-- Farcaster mini app metadata
-- Wallet connector configuration
-- Optional leaderboard/API settings
-
-## Operational Notes
-
-- Keep this README aligned with the live product and portfolio copy.
-- Prefer small, documented changes over large undocumented rewrites.
-- The README now documents the game asset pipeline instead of only describing the web app shell.
-
-## Maintainer
-
-Built by Yusuf / Codexsha.
-
-- GitHub: https://github.com/yusufky63
-- X: https://x.com/codexsha
-- Telegram: https://t.me/codexsha
+- Repository: https://github.com/yusufky63/cosmic-raid
+- Live app: https://cosmic-raid.vercel.app
