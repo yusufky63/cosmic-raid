@@ -1,28 +1,34 @@
 # Cosmic Raid
 
-![Category](https://img.shields.io/badge/Category-Arcade%20Game%20%2F%20Farcaster-1f1f1f?style=flat-square&labelColor=141414&color=2b2b2b) ![Status](https://img.shields.io/badge/Status-public-1f1f1f?style=flat-square&labelColor=141414&color=2b2b2b)
+Cosmic Raid is a Farcaster arcade game experiment with wallet integration, mobile layout, game assets, and leaderboard-oriented UI.
 
-Farcaster arcade game experiment with wallet integration, mobile layout, and leaderboard-oriented UI.
+## Snapshot
 
-## Links
+- **Category:** Farcaster arcade game
+- **Status:** Public repository
+- **Live:** https://cosmic-raid.vercel.app
+- **Repository:** https://github.com/yusufky63/cosmic-raid
+- **Portfolio:** https://codexsha.dev
 
-- Live: https://cosmic-raid.vercel.app
-- Repository: https://github.com/yusufky63/cosmic-raid
-- Portfolio: https://codexsha.dev
+## Product Scope
 
-## Overview
+Cosmic Raid is documented here as a product repository, not just a code dump. The goal of this README is to make the product purpose, runtime surface, and development path clear for future review and maintenance.
 
-Cosmic Raid is part of the Codexsha product portfolio. The project is focused on shipping a compact, usable product surface rather than a demo-only prototype. This README is written to make the repository easier to understand, run, and evaluate.
-
-## Key Features
+## Core Capabilities
 
 - Arcade shooter-style interface
 - Wallet connect/disconnect flow
 - Mobile Farcaster layout
 - Leaderboard-oriented product surface
-- Game assets and power-up UI
+- Ships, power-ups, effects, and optimized image assets
 
-## Stack
+## Existing README Coverage Preserved
+
+This refresh keeps the important project-specific areas from the previous documentation:
+
+- README was missing before this documentation refresh
+
+## Tech Stack
 
 - Next.js
 - TypeScript
@@ -33,33 +39,38 @@ Cosmic Raid is part of the Codexsha product portfolio. The project is focused on
 - React Query
 - Axios
 
-## Role / Ownership
+## Repository Map
 
-Built the game-facing UI, Farcaster initialization, wallet integration, and responsive product shell.
+| Path | Purpose |
+| --- | --- |
+| src/app/ | App routes and shell |
+| src/components/ | Game-facing UI and wallet components |
+| public/images/ | Ships, effects, and power-up assets |
+| optimize-images.js | Image optimization utility |
 
-## Getting Started
+## Local Development
 
-```bash
-npm install
-npm run dev
-npm run build
-```
+| Command | Purpose |
+| --- | --- |
+| npm run dev | Run development server |
+| npm run build | Build production app |
+| npm run start | Start production server |
+| npm run lint | Run lint checks |
+| npm run optimize-images | Run image optimization pipeline |
 
-## Environment
+## Environment Notes
 
-Create a local environment file from the project conventions and configure only the values needed for the flow you are running. Do not commit secrets.
-
-Typical values used by this project include:
+Use local environment files for secrets and deployment-specific values. Do not commit real keys.
 
 - Farcaster mini app metadata
-- wallet connector configuration
-- optional leaderboard/API settings
+- Wallet connector configuration
+- Optional leaderboard/API settings
 
-## Project Notes
+## Operational Notes
 
-- Status: Public repository and live deployment.
-- Private or sensitive implementation details are intentionally not documented in public-facing copy.
-- The README should stay aligned with the live product and the Codexsha portfolio page.
+- Keep this README aligned with the live product and portfolio copy.
+- Prefer small, documented changes over large undocumented rewrites.
+- The README now documents the game asset pipeline instead of only describing the web app shell.
 
 ## Maintainer
 
